@@ -33,14 +33,17 @@ logger = logging.getLogger("ark_infra")
 async def lifespan(app: FastAPI):
     # Startup: Connect to MongoDB & Seed if empty
     logger.info("Initializing ARK Infra Backend API...")
-    await connect_to_mongo()
     try:
+        await connect_to_mongo()
         await seed_initial_database()
     except Exception as e:
-        logger.warning(f"Database seed notice: {e}")
+        logger.warning(f"Database startup connection notice: {e}")
     yield
     # Shutdown: Close MongoDB connection
-    await close_mongo_connection()
+    try:
+        await close_mongo_connection()
+    except Exception:
+        pass
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
