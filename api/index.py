@@ -1,9 +1,23 @@
+import os
 import sys
 from pathlib import Path
 
-# Add backend directory to path
-backend_dir = Path(__file__).resolve().parent.parent / "backend"
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
+# Ensure api directory and backend directory are in path
+current_dir = Path(__file__).resolve().parent
+backend_dir = current_dir.parent / "backend"
 
-from app.main import app
+for p in [str(current_dir), str(backend_dir)]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+try:
+    from app.main import app
+except Exception:
+    try:
+        from .app.main import app
+    except Exception as e:
+        from fastapi import FastAPI
+        app = FastAPI(title="ARK Infra Serverless Error Handler")
+        @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+        async def fallback(path: str):
+            return {"error": "Serverless import error", "detail": str(e)}
