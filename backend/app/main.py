@@ -1,3 +1,4 @@
+import os
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -59,7 +60,8 @@ origins = settings.cors_origins
 logger.info(f"Configuring CORS with origins: {origins}")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins if "*" not in origins else ["*"],
+    allow_origins=["*"],
+    allow_origin_regex=r"^https?:\/\/.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
