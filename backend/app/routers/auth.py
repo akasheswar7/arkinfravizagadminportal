@@ -9,13 +9,19 @@ router = APIRouter(prefix="/admin", tags=["Authentication"])
 @router.post("/login", response_model=AdminTokenResponse)
 async def login(credentials: AdminLoginRequest):
     """Authenticates the admin and returns a signed JWT."""
-    admins_col = get_collection("admins")
-    admin = await admins_col.find_one({
-        "$or": [
-            {"email": credentials.username_or_email.lower().strip()},
-            {"username": credentials.username_or_email.strip()}
-        ]
-    })
+    try:
+        admins_col = get_collection("admins")
+        admin = await admins_col.find_one({
+            "$or": [
+                {"email": credentials.username_or_email.lower().strip()},
+                {"username": credentials.username_or_email.strip()}
+            ]
+        })
+    except Exception as db_err:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database connection error: {str(db_err)}"
+        )
 
     if not admin or not verify_password(credentials.password, admin.get("hashed_password", "")):
         raise HTTPException(
@@ -24,10 +30,13 @@ async def login(credentials: AdminLoginRequest):
         )
 
     # Update last login timestamp
-    await admins_col.update_one(
-        {"_id": admin["_id"]},
-        {"$set": {"last_login": datetime.now(timezone.utc)}}
-    )
+    try:
+        await admins_col.update_one(
+            {"_id": admin["_id"]},
+            {"$set": {"last_login": datetime.now(timezone.utc)}}
+        )
+    except Exception:
+        pass
 
     token = create_access_token({"sub": admin["email"], "role": admin.get("role", "admin")})
     return AdminTokenResponse(
