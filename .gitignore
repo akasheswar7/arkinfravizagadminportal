@@ -1,0 +1,9 @@
+.env
+*.env
+.venv/
+__pycache__/
+*.pyc
+*credentials*.json
+gcp-credentials.json
+backend/uploads/
+uploads/
