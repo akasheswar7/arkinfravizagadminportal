@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from app.core.config import settings
@@ -7,12 +8,19 @@ logger = logging.getLogger(__name__)
 class DatabaseManager:
     client: AsyncIOMotorClient = None
     db: AsyncIOMotorDatabase = None
+    _loop: any = None
 
 db_manager = DatabaseManager()
 
 async def connect_to_mongo():
     logger.info(f"Connecting to MongoDB at: {settings.MONGODB_URI.split('@')[-1] if '@' in settings.MONGODB_URI else settings.MONGODB_URI}")
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
     db_manager.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=5000)
+    db_manager._loop = loop
     db_manager.db = db_manager.client[settings.db_name]
 
     # Verify connection
@@ -37,13 +45,17 @@ async def close_mongo_connection():
         logger.info("MongoDB connection closed.")
 
 def get_db() -> AsyncIOMotorDatabase:
-    if db_manager.db is None:
+    try:
+        current_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        current_loop = None
+
+    if db_manager.client is None or db_manager._loop != current_loop:
         db_manager.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=5000)
+        db_manager._loop = current_loop
         db_manager.db = db_manager.client[settings.db_name]
     return db_manager.db
 
 def get_collection(name: str):
-    if db_manager.db is None:
-        db_manager.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=5000)
-        db_manager.db = db_manager.client[settings.db_name]
-    return db_manager.db[name]
+    db = get_db()
+    return db[name]
