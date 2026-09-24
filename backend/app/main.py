@@ -2,7 +2,7 @@ import os
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -67,6 +67,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def normalize_vercel_paths(request: Request, call_next):
+    # Handle serverless path mapping if Vercel passes full script path
+    path = request.scope.get("path", "")
+    if path.startswith("/api/index.py"):
+        sub = path[len("/api/index.py"):]
+        request.scope["path"] = sub if sub else "/"
+    return await call_next(request)
+
 # Static Uploads directory for images (Vercel uses /tmp)
 if os.environ.get("VERCEL"):
     UPLOAD_PATH = Path("/tmp") / settings.UPLOAD_DIR
@@ -79,18 +88,25 @@ try:
 except Exception as e:
     logger.warning(f"Static uploads mount warning: {e}")
 
-# Mount Routers under /api
-app.include_router(auth.router, prefix=settings.API_PREFIX)
-app.include_router(uploads.router, prefix=settings.API_PREFIX)
-app.include_router(directors.router, prefix=settings.API_PREFIX)
-app.include_router(agents.router, prefix=settings.API_PREFIX)
-app.include_router(customers.router, prefix=settings.API_PREFIX)
-app.include_router(gallery.router, prefix=settings.API_PREFIX)
-app.include_router(announcements.router, prefix=settings.API_PREFIX)
-app.include_router(reports.router, prefix=settings.API_PREFIX)
-app.include_router(stats.router, prefix=settings.API_PREFIX)
-app.include_router(whatsapp.router, prefix=settings.API_PREFIX)
+# Mount Routers (Dual mounted under both /api and root to handle any proxy/rewrite configuration)
+all_routers = [
+    auth.router,
+    uploads.router,
+    directors.router,
+    agents.router,
+    customers.router,
+    gallery.router,
+    announcements.router,
+    reports.router,
+    stats.router,
+    whatsapp.router
+]
 
+for r in all_routers:
+    app.include_router(r, prefix=settings.API_PREFIX)
+    app.include_router(r)
+
+@app.get("/health")
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint for status monitoring."""
@@ -99,4 +115,14 @@ async def health_check():
         "service": "ARK Infra Backend API",
         "database": settings.DATABASE_NAME,
         "storage_mode": settings.STORAGE_MODE
+    }
+
+@app.get("/api-debug")
+@app.get("/api/api-debug")
+async def debug_check(request: Request):
+    return {
+        "url": str(request.url),
+        "path": request.url.path,
+        "scope_path": request.scope.get("path"),
+        "method": request.method
     }

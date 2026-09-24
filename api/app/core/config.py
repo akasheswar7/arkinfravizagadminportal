@@ -8,9 +8,9 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api"
 
     # Database
-    MONGODB_URI: str = "mongodb://localhost:27017"
-    DATABASE_NAME: str = "ark_infra_dev"
-    MONGODB_DB_NAME: str = ""
+    MONGODB_URI: str = "mongodb+srv://arkinfraproperties_db_user:f2lrswMhYaLpkw0k@cluster0.xvovezq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    DATABASE_NAME: str = "arkinfradev"
+    MONGODB_DB_NAME: str = "arkinfradev"
 
     @property
     def db_name(self) -> str:
