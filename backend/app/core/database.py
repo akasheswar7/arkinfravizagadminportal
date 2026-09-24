@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import certifi
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from app.core.config import settings
 
@@ -12,6 +13,20 @@ class DatabaseManager:
 
 db_manager = DatabaseManager()
 
+def build_motor_client() -> AsyncIOMotorClient:
+    """Builds a robust Motor client with Mozilla CA bundle and standard timeouts."""
+    ca_file = certifi.where()
+    is_atlas = "mongodb+srv://" in settings.MONGODB_URI or "mongodb.net" in settings.MONGODB_URI
+    kwargs = {
+        "serverSelectionTimeoutMS": 10000,
+        "connectTimeoutMS": 10000,
+        "socketTimeoutMS": 20000
+    }
+    if is_atlas:
+        kwargs["tls"] = True
+        kwargs["tlsCAFile"] = ca_file
+    return AsyncIOMotorClient(settings.MONGODB_URI, **kwargs)
+
 async def connect_to_mongo():
     logger.info(f"Connecting to MongoDB at: {settings.MONGODB_URI.split('@')[-1] if '@' in settings.MONGODB_URI else settings.MONGODB_URI}")
     try:
@@ -19,7 +34,7 @@ async def connect_to_mongo():
     except RuntimeError:
         loop = None
 
-    db_manager.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=5000)
+    db_manager.client = build_motor_client()
     db_manager._loop = loop
     db_manager.db = db_manager.client[settings.db_name]
 
@@ -51,7 +66,7 @@ def get_db() -> AsyncIOMotorDatabase:
         current_loop = None
 
     if db_manager.client is None or db_manager._loop != current_loop:
-        db_manager.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=5000)
+        db_manager.client = build_motor_client()
         db_manager._loop = current_loop
         db_manager.db = db_manager.client[settings.db_name]
     return db_manager.db
