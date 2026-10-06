@@ -74,7 +74,12 @@ async def upload_file_chunk(
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
         content_type = file.content_type or ""
 
-        is_video = content_type.startswith("video/") or ext in {".mp4", ".mov", ".avi", ".webm", ".m4v"}
+        is_video = content_type.startswith("video/") or ext in {".mp4", ".mov", ".avi", ".webm", ".m4v", ".mkv"}
+        is_pdf_or_doc = (
+            content_type in {"application/pdf", "application/x-pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain", "text/csv"} or
+            ext in {".pdf", ".doc", ".docx", ".txt", ".csv", ".xls", ".xlsx", ".zip", ".rar"} or
+            (content_type and not content_type.startswith("image/") and not content_type.startswith("video/"))
+        )
 
         if is_video:
             unique_id = uuid.uuid4().hex[:12]
@@ -93,35 +98,74 @@ async def upload_file_chunk(
                 "original_filename": filename,
                 "size_bytes": file_size,
                 "is_video": True,
+                "is_pdf": False,
                 "message": "Large video file uploaded and assembled successfully."
             }
 
-        # Image processing if image
-        validate_image_upload(content_type, file_size, filename)
-        max_dim = 1600 if folder == "gallery" else 800
-        main_bytes, main_name, thumb_bytes, thumb_name = process_and_optimize_image(
-            full_bytes,
-            max_dimension=max_dim,
-            quality=85,
-            make_thumbnail=True
-        )
+        if is_pdf_or_doc:
+            unique_id = uuid.uuid4().hex[:12]
+            doc_name = f"doc_{unique_id}{ext if ext else '.pdf'}"
+            mime_type = content_type if content_type else "application/pdf"
+            doc_url = await storage_service.save_file(full_bytes, doc_name, mime_type)
 
-        main_url = await storage_service.save_file(main_bytes, main_name, "image/webp")
-        thumb_url = None
-        if thumb_bytes and thumb_name:
-            thumb_url = await storage_service.save_file(thumb_bytes, thumb_name, "image/webp")
+            logger.info(f"Chunked PDF/document assembled & saved: {doc_name} ({file_size} bytes)")
+            return {
+                "success": True,
+                "completed": True,
+                "url": doc_url,
+                "filename": doc_name,
+                "original_filename": filename,
+                "size_bytes": file_size,
+                "is_video": False,
+                "is_pdf": (ext == ".pdf" or "pdf" in content_type),
+                "message": "Large document/PDF uploaded successfully."
+            }
 
-        return {
-            "success": True,
-            "completed": True,
-            "url": main_url,
-            "thumbnail_url": thumb_url or main_url,
-            "filename": main_name,
-            "original_filename": filename,
-            "size_bytes": len(main_bytes),
-            "is_video": False,
-            "message": "Large photo uploaded and assembled successfully."
-        }
+        # Image processing with safe raw-file fallback
+        try:
+            validate_image_upload(content_type, file_size, filename)
+            max_dim = 1600 if folder == "gallery" else 800
+            main_bytes, main_name, thumb_bytes, thumb_name = process_and_optimize_image(
+                full_bytes,
+                max_dimension=max_dim,
+                quality=85,
+                make_thumbnail=True
+            )
+
+            main_url = await storage_service.save_file(main_bytes, main_name, "image/webp")
+            thumb_url = None
+            if thumb_bytes and thumb_name:
+                thumb_url = await storage_service.save_file(thumb_bytes, thumb_name, "image/webp")
+
+            return {
+                "success": True,
+                "completed": True,
+                "url": main_url,
+                "thumbnail_url": thumb_url or main_url,
+                "filename": main_name,
+                "original_filename": filename,
+                "size_bytes": len(main_bytes),
+                "is_video": False,
+                "is_pdf": False,
+                "message": "Large photo uploaded and optimized successfully."
+            }
+        except Exception as img_err:
+            logger.warning(f"Pillow image optimization skipped, saving raw image: {img_err}")
+            unique_id = uuid.uuid4().hex[:12]
+            raw_name = f"file_{unique_id}{ext if ext else '.bin'}"
+            raw_url = await storage_service.save_file(full_bytes, raw_name, content_type or "application/octet-stream")
+            return {
+                "success": True,
+                "completed": True,
+                "url": raw_url,
+                "thumbnail_url": raw_url,
+                "filename": raw_name,
+                "original_filename": filename,
+                "size_bytes": file_size,
+                "is_video": False,
+                "is_pdf": ext == ".pdf",
+                "message": "File uploaded successfully."
+            }
 
     except HTTPException:
         raise
@@ -148,8 +192,15 @@ async def upload_photo(
         filename = file.filename or "file"
         ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
+        is_video = content_type.startswith("video/") or ext in {".mp4", ".mov", ".avi", ".webm", ".m4v", ".mkv"}
+        is_pdf_or_doc = (
+            content_type in {"application/pdf", "application/x-pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain", "text/csv"} or
+            ext in {".pdf", ".doc", ".docx", ".txt", ".csv", ".xls", ".xlsx", ".zip", ".rar"} or
+            (content_type and not content_type.startswith("image/") and not content_type.startswith("video/"))
+        )
+
         # Handle Video File Uploads (MP4, WEBM, MOV, AVI)
-        if content_type.startswith("video/") or ext in {".mp4", ".mov", ".avi", ".webm", ".m4v"}:
+        if is_video:
             unique_id = uuid.uuid4().hex[:12]
             video_name = f"vid_{unique_id}{ext if ext else '.mp4'}"
             mime_type = content_type if content_type.startswith("video/") else "video/mp4"
@@ -165,37 +216,74 @@ async def upload_photo(
                 "original_filename": file.filename,
                 "size_bytes": file_size,
                 "is_video": True,
+                "is_pdf": False,
                 "message": "Video file uploaded successfully."
             }
 
-        # Handle Image Uploads
-        validate_image_upload(content_type, file_size, filename)
+        # Handle PDF / Document Uploads
+        if is_pdf_or_doc:
+            unique_id = uuid.uuid4().hex[:12]
+            doc_name = f"doc_{unique_id}{ext if ext else '.pdf'}"
+            mime_type = content_type if content_type else "application/pdf"
+            doc_url = await storage_service.save_file(contents, doc_name, mime_type)
 
-        max_dim = 1600 if folder == "gallery" else 800
-        main_bytes, main_name, thumb_bytes, thumb_name = process_and_optimize_image(
-            contents,
-            max_dimension=max_dim,
-            quality=85,
-            make_thumbnail=True
-        )
+            logger.info(f"PDF/Document uploaded successfully: {doc_name} ({file_size} bytes)")
+            return {
+                "success": True,
+                "url": doc_url,
+                "filename": doc_name,
+                "original_filename": file.filename,
+                "size_bytes": file_size,
+                "is_video": False,
+                "is_pdf": (ext == ".pdf" or "pdf" in content_type),
+                "message": "PDF / Document uploaded successfully."
+            }
 
-        main_url = await storage_service.save_file(main_bytes, main_name, "image/webp")
-        thumb_url = None
-        if thumb_bytes and thumb_name:
-            thumb_url = await storage_service.save_file(thumb_bytes, thumb_name, "image/webp")
+        # Handle Image Uploads with safe raw-file fallback
+        try:
+            validate_image_upload(content_type, file_size, filename)
+            max_dim = 1600 if folder == "gallery" else 800
+            main_bytes, main_name, thumb_bytes, thumb_name = process_and_optimize_image(
+                contents,
+                max_dimension=max_dim,
+                quality=85,
+                make_thumbnail=True
+            )
 
-        logger.info(f"Photo uploaded successfully: {main_name} ({file_size} -> {len(main_bytes)} bytes)")
+            main_url = await storage_service.save_file(main_bytes, main_name, "image/webp")
+            thumb_url = None
+            if thumb_bytes and thumb_name:
+                thumb_url = await storage_service.save_file(thumb_bytes, thumb_name, "image/webp")
 
-        return {
-            "success": True,
-            "url": main_url,
-            "thumbnail_url": thumb_url or main_url,
-            "filename": main_name,
-            "original_filename": file.filename,
-            "size_bytes": len(main_bytes),
-            "is_video": False,
-            "message": "Photo uploaded and optimized successfully."
-        }
+            logger.info(f"Photo uploaded successfully: {main_name} ({file_size} -> {len(main_bytes)} bytes)")
+
+            return {
+                "success": True,
+                "url": main_url,
+                "thumbnail_url": thumb_url or main_url,
+                "filename": main_name,
+                "original_filename": file.filename,
+                "size_bytes": len(main_bytes),
+                "is_video": False,
+                "is_pdf": False,
+                "message": "Photo uploaded and optimized successfully."
+            }
+        except Exception as img_err:
+            logger.warning(f"Pillow image optimization skipped, saving raw file: {img_err}")
+            unique_id = uuid.uuid4().hex[:12]
+            raw_name = f"file_{unique_id}{ext if ext else '.bin'}"
+            raw_url = await storage_service.save_file(contents, raw_name, content_type or "application/octet-stream")
+            return {
+                "success": True,
+                "url": raw_url,
+                "thumbnail_url": raw_url,
+                "filename": raw_name,
+                "original_filename": file.filename,
+                "size_bytes": file_size,
+                "is_video": False,
+                "is_pdf": ext == ".pdf",
+                "message": "File uploaded successfully."
+            }
 
     except HTTPException:
         raise

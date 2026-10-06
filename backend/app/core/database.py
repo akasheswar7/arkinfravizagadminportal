@@ -47,6 +47,10 @@ async def connect_to_mongo():
         await db_manager.db["admins"].create_index("email", unique=True)
         await db_manager.db["agents"].create_index("director_id")
         await db_manager.db["customers"].create_index("site_visit_status")
+        await db_manager.db["customers"].create_index("director_id")
+        await db_manager.db["customers"].create_index("agent_id")
+        await db_manager.db["customers"].create_index("phone")
+        await db_manager.db["customers"].create_index("created_at")
         await db_manager.db["gallery"].create_index("category")
         await db_manager.db["announcements"].create_index("active")
     except Exception as e:

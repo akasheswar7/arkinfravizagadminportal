@@ -12,34 +12,39 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = {
     ".jpg", ".jpeg", ".png", ".webp", ".jfif", ".pjpeg", ".pjp",
-    ".avif", ".heic", ".heif", ".bmp", ".tiff", ".tif"
+    ".avif", ".heic", ".heif", ".bmp", ".tiff", ".tif", ".pdf",
+    ".doc", ".docx", ".txt", ".csv", ".xls", ".xlsx", ".zip", ".rar",
+    ".mp4", ".mov", ".avi", ".webm", ".m4v", ".mkv"
 }
 ALLOWED_MIME_TYPES = {
     "image/jpeg", "image/jpg", "image/pjpeg", "image/jfif", "image/pjp",
     "image/png", "image/x-png", "image/webp", "image/heic", "image/heif",
     "image/heic-sequence", "image/heif-sequence", "image/avif", "image/bmp",
-    "image/x-ms-bmp", "image/tiff", "application/octet-stream"
+    "image/x-ms-bmp", "image/tiff", "application/octet-stream", "application/pdf",
+    "application/x-pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain", "text/csv", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/zip", "application/x-rar-compressed"
 }
-MAX_FILE_SIZE_BYTES = 35 * 1024 * 1024  # 35 MB
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 * 1024  # 5 GB (virtually unlimited)
 
 def validate_image_upload(content_type: str, file_size: int, filename: str):
     """Validates file extension, MIME type, and size."""
     if file_size > MAX_FILE_SIZE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File too large. Maximum allowed size is {MAX_FILE_SIZE_BYTES // (1024 * 1024)}MB."
+            detail=f"File too large. Maximum allowed size is 5GB."
         )
 
     norm_type = (content_type or "").lower().split(";")[0].strip()
     ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
 
-    is_valid_ext = ext in ALLOWED_EXTENSIONS
-    is_valid_mime = norm_type in ALLOWED_MIME_TYPES or norm_type.startswith("image/")
+    is_valid_ext = ext in ALLOWED_EXTENSIONS or bool(ext)
+    is_valid_mime = norm_type in ALLOWED_MIME_TYPES or norm_type.startswith("image/") or norm_type.startswith("application/") or norm_type.startswith("video/") or norm_type.startswith("text/")
 
     if not is_valid_ext and not is_valid_mime:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid image format. Allowed formats: JPG, JPEG, PNG, WebP, AVIF, HEIC, JFIF."
+            detail="Invalid file format. Allowed formats: PDF, JPG, JPEG, PNG, WebP, AVIF, HEIC, JFIF, DOC, DOCX, TXT."
         )
 
 def process_and_optimize_image(

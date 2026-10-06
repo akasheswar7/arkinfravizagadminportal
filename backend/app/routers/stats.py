@@ -12,10 +12,12 @@ async def get_dashboard_stats(current_admin: dict = Depends(get_current_admin)):
     customers_col = get_collection("customers")
     gallery_col = get_collection("gallery")
     ann_col = get_collection("announcements")
+    app_col = get_collection("site_applications")
 
     total_directors = await directors_col.count_documents({})
     total_agents = await agents_col.count_documents({})
     total_customers = await customers_col.count_documents({})
+    total_applications = await app_col.count_documents({})
     pending_visits = await customers_col.count_documents({"site_visit_status": "Pending"})
     completed_visits = await customers_col.count_documents({"site_visit_status": "Site Visit Completed"})
     registrations = await customers_col.count_documents({"site_visit_status": "Registration Completed"})
@@ -26,6 +28,7 @@ async def get_dashboard_stats(current_admin: dict = Depends(get_current_admin)):
         "total_directors": total_directors,
         "total_agents": total_agents,
         "total_customers": total_customers,
+        "total_applications": total_applications,
         "pending_site_visits": pending_visits,
         "completed_site_visits": completed_visits,
         "registrations": registrations,

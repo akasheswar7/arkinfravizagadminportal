@@ -18,6 +18,7 @@ class CustomerBase(BaseModel):
     plot_size: Optional[str] = None
     advance_amount: Optional[str] = None
     receipt_url: Optional[str] = None
+    supported_by: Optional[str] = None
     director_id: Optional[str] = None
     director_name: Optional[str] = None
     agent_id: Optional[str] = None
@@ -40,6 +41,7 @@ class CustomerUpdate(BaseModel):
     plot_size: Optional[str] = None
     advance_amount: Optional[str] = None
     receipt_url: Optional[str] = None
+    supported_by: Optional[str] = None
     director_id: Optional[str] = None
     director_name: Optional[str] = None
     agent_id: Optional[str] = None

@@ -29,7 +29,8 @@ from app.routers import (
     projects,
     reports,
     stats,
-    whatsapp
+    whatsapp,
+    site_applications
 )
 
 # Logging configuration
@@ -119,7 +120,8 @@ all_routers = [
     projects.router,
     reports.router,
     stats.router,
-    whatsapp.router
+    whatsapp.router,
+    site_applications.router
 ]
 
 for r in all_routers:

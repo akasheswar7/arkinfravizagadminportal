@@ -23,6 +23,7 @@ def _format_customer(doc: dict) -> dict:
         "plot_size": doc.get("plot_size"),
         "advance_amount": doc.get("advance_amount"),
         "receipt_url": doc.get("receipt_url"),
+        "supported_by": doc.get("supported_by"),
         "director_id": doc.get("director_id"),
         "director_name": doc.get("director_name"),
         "agent_id": doc.get("agent_id"),
@@ -56,6 +57,7 @@ async def list_customers(
             {"phone": {"$regex": search, "$options": "i"}},
             {"address": {"$regex": search, "$options": "i"}},
             {"plot_number": {"$regex": search, "$options": "i"}},
+            {"supported_by": {"$regex": search, "$options": "i"}},
             {"agent_name": {"$regex": search, "$options": "i"}},
             {"director_name": {"$regex": search, "$options": "i"}}
         ]
