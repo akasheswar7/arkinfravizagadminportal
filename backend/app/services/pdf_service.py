@@ -162,18 +162,16 @@ async def _resolve_image_to_flowable(image_path_or_url: Optional[str], width: fl
     return None
 
 def _create_placeholder_avatar(text: str, width: float, height: float) -> Table:
-    """Returns a styled avatar box when photo is not present."""
-    initials = "".join([part[0].upper() for part in text.split()[:2]]) or "ARK"
-    data = [[initials]]
+    """Returns a clean passport photo placeholder box when digital photo is not attached."""
+    from reportlab.platypus import Paragraph
+    styles = _get_styles()
+    data = [[Paragraph("<font size='7' color='#64748b'><b>AFFIX<br/>PASSPORT<br/>PHOTO<br/>HERE</b></font>", styles['ArkBody'])]]
     t = Table(data, colWidths=[width], rowHeights=[height])
     t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), NAVY_MID),
-        ('TEXTCOLOR', (0,0), (-1,-1), GOLD),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,-1), 12),
-        ('BOX', (0,0), (-1,-1), 1, GOLD),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#94a3b8")),
     ]))
     return t
 
@@ -663,35 +661,30 @@ async def generate_site_application_pdf(app_data: Dict[str, Any]) -> bytes:
     story = []
 
     # 1. Header with Logo, Company Details & Application Box
-    logo_img = await _resolve_image_to_flowable("images/logo.webp", 65, 65)
-    stamp_img = await _resolve_image_to_flowable("images/ark-stamp.png", 75, 75)
-    sig_md = await _resolve_image_to_flowable("images/signature-md.png", 95, 32)
-    sig_ceo = await _resolve_image_to_flowable("images/signature-ceo.png", 95, 32)
+    logo_img = await _resolve_image_to_flowable("images/logo.webp", 60, 60)
 
     app_no = _clean_text(app_data.get("application_no") or f"ARK-APP-{datetime.now().strftime('%Y%m%d%H%M')}")
     app_date = _clean_text(app_data.get("payment_date") or app_data.get("created_at_str") or datetime.now().strftime("%d-%m-%Y"))
-    status_str = _clean_text(app_data.get("verification_status") or "Verified & Approved by ARK Infra")
 
     company_info = [
         Paragraph("<b><font size='14' color='#050d1a'>ARK INFRA AND DEVELOPERS</font></b>", styles['ArkTitle']),
-        Paragraph("<font size='8' color='#c9a962'><b>OFFICIAL REAL ESTATE &amp; TOWNSHIP PROMOTERS</b></font>", styles['ArkBody']),
-        Paragraph("<font size='7' color='#64748b'>Regd. No: 132/2020 &bull; ISO 9001:2015 Certified &bull; Visakhapatnam, Andhra Pradesh<br/>Phone: +91 98480 11223 &bull; Website: arkinfravizag.com &bull; Email: info@arkinfravizag.com</font>", styles['ArkBody'])
+        Paragraph("<font size='8' color='#9a7b3a'><b>OFFICIAL REAL ESTATE &amp; TOWNSHIP PROMOTERS</b></font>", styles['ArkBody']),
+        Paragraph("<font size='7' color='#64748b'>Corporate Office: Visakhapatnam, Andhra Pradesh &bull; Regd. No: 132/2020 &bull; ISO 9001:2015 Certified<br/>Phone: +91 98484 98070 &bull; Email: arkinfraproperties@gmail.com &bull; Web: arkinfravizag.com</font>", styles['ArkBody'])
     ]
 
     badge_data = [
-        [Paragraph(f"<b>APPLICATION NO:</b><br/><font color='#c9a962'><b>{app_no}</b></font>", styles['ArkBody'])],
-        [Paragraph(f"<b>DATE:</b> {app_date}", styles['ArkBody'])],
-        [Paragraph("<font color='#16a34a' size='7'><b>&#10004; VERIFIED &amp; AUTHORIZED</b></font>", styles['ArkBody'])]
+        [Paragraph(f"<b>APPLICATION NO:</b><br/><font color='#9a7b3a'><b>{app_no}</b></font>", styles['ArkBody'])],
+        [Paragraph(f"<b>DATE:</b> {app_date}", styles['ArkBody'])]
     ]
     badge_table = Table(badge_data, colWidths=[140])
     badge_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
         ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#cbd5e1")),
-        ('PADDING', (0,0), (-1,-1), 3),
+        ('PADDING', (0,0), (-1,-1), 4),
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
     ]))
 
-    header_table = Table([[logo_img or "", company_info, badge_table]], colWidths=[70, 330, 140])
+    header_table = Table([[logo_img or "", company_info, badge_table]], colWidths=[65, 335, 140])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('PADDING', (0,0), (-1,-1), 0),
@@ -702,10 +695,10 @@ async def generate_site_application_pdf(app_data: Dict[str, Any]) -> bytes:
 
     # Title Bar
     title_data = [[
-        Paragraph("<font size='9' color='#ffffff'><b>CUSTOMER SITE APPLICATION &amp; ADVANCE BOOKING RECEIPT</b></font>", styles['ArkBody']),
-        Paragraph("<font size='7' color='#e4d4a8'><b>CONFIDENTIAL / OFFICIAL RECORD</b></font>", styles['ArkBody'])
+        Paragraph("<font size='9' color='#ffffff'><b>CUSTOMER APPLICATION &amp; ADVANCE PAYMENT FORM</b></font>", styles['ArkBody']),
+        Paragraph("<font size='7' color='#e4d4a8'><b>OFFICIAL RECORD</b></font>", styles['ArkBody'])
     ]]
-    title_table = Table(title_data, colWidths=[380, 160])
+    title_table = Table(title_data, colWidths=[400, 140])
     title_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), NAVY_DEEP),
         ('PADDING', (0,0), (-1,-1), 3),
@@ -715,27 +708,25 @@ async def generate_site_application_pdf(app_data: Dict[str, Any]) -> bytes:
     story.append(title_table)
     story.append(Spacer(1, 4))
 
-    # Customer photo resolution
-    cust_photo_url = app_data.get("photo_url") or app_data.get("photo_or_id")
-    cust_photo = await _resolve_image_to_flowable(cust_photo_url, 80, 90) or _create_placeholder_avatar(app_data.get("customer_name", "Customer"), 80, 90)
-
+    # Customer Photo & Particulars
     c_name = _clean_text(app_data.get("customer_name", ""))
+    cust_photo_url = app_data.get("photo_url") or app_data.get("photo_or_id") or app_data.get("customer_photo_url")
+    cust_photo = await _resolve_image_to_flowable(cust_photo_url, 80, 95) or _create_placeholder_avatar(c_name, 80, 95)
+
     c_parent = _clean_text(app_data.get("father_or_spouse_name") or "-")
     c_phone = _clean_text(app_data.get("phone", ""))
     c_alt = _clean_text(app_data.get("alt_phone") or "-")
     c_email = _clean_text(app_data.get("email") or "-")
     c_address = _clean_text(app_data.get("address") or "-")
-    c_aadhaar = _clean_text(app_data.get("aadhaar_or_id") or "Confidential")
-    c_nominee = _clean_text(app_data.get("nominee_name") or "-")
-    c_nom_rel = _clean_text(app_data.get("nominee_relation") or "-")
+    c_aadhaar = _clean_text(app_data.get("aadhaar_or_id") or "-")
 
     customer_table_data = [
-        [Paragraph("<b>Customer Full Name:</b>", styles['ArkBody']), Paragraph(f"<b>{c_name}</b>", styles['ArkBody']), cust_photo],
+        [Paragraph("<b>Customer Name:</b>", styles['ArkBody']), Paragraph(f"<b>{c_name}</b>", styles['ArkBody']), cust_photo],
         [Paragraph("<b>S/o, W/o, D/o:</b>", styles['ArkBody']), Paragraph(c_parent, styles['ArkBody']), ""],
-        [Paragraph("<b>Primary Mobile:</b>", styles['ArkBody']), Paragraph(f"{c_phone} (Alt: {c_alt})", styles['ArkBody']), ""],
+        [Paragraph("<b>Contact Phone:</b>", styles['ArkBody']), Paragraph(f"{c_phone}" + (f" (Alt: {c_alt})" if c_alt != "-" else ""), styles['ArkBody']), ""],
         [Paragraph("<b>Email Address:</b>", styles['ArkBody']), Paragraph(c_email, styles['ArkBody']), ""],
-        [Paragraph("<b>Permanent Address:</b>", styles['ArkBody']), Paragraph(c_address, styles['ArkBody']), ""],
-        [Paragraph("<b>Aadhaar / ID No:</b>", styles['ArkBody']), Paragraph(f"{c_aadhaar} | <b>Nominee:</b> {c_nominee} ({c_nom_rel})", styles['ArkBody']), ""]
+        [Paragraph("<b>Residential Address:</b>", styles['ArkBody']), Paragraph(c_address, styles['ArkBody']), ""],
+        [Paragraph("<b>Aadhaar / ID No:</b>", styles['ArkBody']), Paragraph(c_aadhaar, styles['ArkBody']), ""]
     ]
 
     c_table = Table(customer_table_data, colWidths=[115, 335, 90])
@@ -750,27 +741,13 @@ async def generate_site_application_pdf(app_data: Dict[str, Any]) -> bytes:
     story.append(c_table)
     story.append(Spacer(1, 4))
 
-    # Property & Site Visit Particulars
+    # Property Particulars
     v_name = _clean_text(app_data.get("venture_name") or app_data.get("project_interested") or "-")
     p_num = _clean_text(app_data.get("plot_number") or "-")
     p_size = _clean_text(app_data.get("plot_size") or "-")
     p_facing = _clean_text(app_data.get("plot_facing") or "-")
-    p_rate = _clean_text(app_data.get("rate_per_sq_yd") or "-")
-    p_val = _clean_text(app_data.get("total_site_value") or "-")
-    v_date = _clean_text(app_data.get("site_visit_date") or app_data.get("submission_date") or "Verified")
-    supp_by = _clean_text(app_data.get("supported_by") or (app_data.get("director_name") and f"Director: {app_data.get('director_name')}") or "Direct / Company Own")
 
-    prop_header = [[
-        Paragraph("<font size='8' color='#122a47'><b>PROPERTY, VENTURE &amp; SITE VISIT DETAILS</b></font>", styles['ArkBody']),
-        Paragraph(f"<b>Supported By:</b> <font color='#c9a962'>{supp_by}</font>", styles['ArkBody'])
-    ]]
-    prop_head_table = Table(prop_header, colWidths=[340, 200])
-    prop_head_table.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('ALIGN', (1,0), (1,0), 'RIGHT'),
-        ('PADDING', (0,0), (-1,-1), 1),
-    ]))
-    story.append(prop_head_table)
+    story.append(Paragraph("<font size='8' color='#122a47'><b>PROPERTY &amp; VENTURE PARTICULARS</b></font>", styles['ArkBody']))
 
     prop_table_data = [
         [
@@ -780,112 +757,100 @@ async def generate_site_application_pdf(app_data: Dict[str, Any]) -> bytes:
         [
             Paragraph("<b>Plot Extent / Size:</b>", styles['ArkBody']), Paragraph(p_size, styles['ArkBody']),
             Paragraph("<b>Plot Facing:</b>", styles['ArkBody']), Paragraph(p_facing, styles['ArkBody'])
-        ],
-        [
-            Paragraph("<b>Rate per Sq. Yard:</b>", styles['ArkBody']), Paragraph(f"Rs. {p_rate}" if p_rate != "-" and not p_rate.startswith("Rs") and not p_rate.startswith("₹") else p_rate, styles['ArkBody']),
-            Paragraph("<b>Total Site Consideration:</b>", styles['ArkBody']), Paragraph(f"<b>Rs. {p_val}</b>" if p_val != "-" and not p_val.startswith("Rs") and not p_val.startswith("₹") else f"<b>{p_val}</b>", styles['ArkBody'])
-        ],
-        [
-            Paragraph("<b>Site Visit Status:</b>", styles['ArkBody']), Paragraph(f"<font color='#16a34a'><b>&#10004; Site Visit Inspected &amp; Completed</b></font> ({v_date})", styles['ArkBody']),
-            Paragraph("<b>Assigned Referral:</b>", styles['ArkBody']), Paragraph(f"Dir: {_clean_text(app_data.get('director_name') or '-')} | Agent: {_clean_text(app_data.get('agent_name') or '-')}", styles['ArkBody'])
         ]
     ]
     p_table = Table(prop_table_data, colWidths=[120, 160, 110, 150])
     p_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), BG_CARD),
         ('GRID', (0,0), (-1,-1), 0.5, BORDER_COLOR),
-        ('PADDING', (0,0), (-1,-1), 2),
+        ('PADDING', (0,0), (-1,-1), 3),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
     story.append(p_table)
     story.append(Spacer(1, 4))
 
-    # Financial & Advance Payment Receipt Section
+    # Financial & Advance Payment Receipt Section (Clean & Prominent)
     adv_amt = _clean_text(app_data.get("advance_amount") or "0")
     adv_words = _clean_text(app_data.get("advance_amount_words") or "")
     pay_mode = _clean_text(app_data.get("payment_mode") or "Online / UPI Transfer")
     txn_id = _clean_text(app_data.get("transaction_id") or "Token Advance Verified")
     bal_amt = _clean_text(app_data.get("balance_amount") or "-")
-    due_date = _clean_text(app_data.get("balance_due_date") or "As per payment schedule")
-    receipt_status = "Original Payment Bill / Receipt Uploaded to MongoDB Records" if app_data.get("receipt_url") else "Payment Acknowledged by Office Counter"
+    due_date = _clean_text(app_data.get("balance_due_date") or "As per agreed schedule")
 
-    story.append(Paragraph("<font size='8' color='#122a47'><b>ADVANCE PAYMENT PARTICULARS &amp; FINANCIAL RECEIPT</b></font>", styles['ArkBody']))
+    story.append(Paragraph("<font size='8' color='#166534'><b>ADVANCE PAYMENT &amp; MONEY TRANSACTION DETAILS</b></font>", styles['ArkBody']))
 
     fin_table_data = [
         [
             Paragraph("<b>Advance Amount Paid:</b>", styles['ArkBody']),
-            Paragraph(f"<b><font size='10' color='#166534'>Rs. {adv_amt}</font></b>" + (f" ({adv_words})" if adv_words else ""), styles['ArkBody']),
+            Paragraph(f"<b><font size='10' color='#166534'>Rs. {adv_amt}</font></b>" + (f"<br/><font size='7' color='#475569'>({adv_words})</font>" if adv_words else ""), styles['ArkBody']),
             Paragraph("<b>Payment Date:</b>", styles['ArkBody']),
             Paragraph(app_date, styles['ArkBody'])
         ],
         [
             Paragraph("<b>Payment Mode:</b>", styles['ArkBody']),
             Paragraph(pay_mode, styles['ArkBody']),
-            Paragraph("<b>Txn / Cheque Ref:</b>", styles['ArkBody']),
+            Paragraph("<b>Txn / Reference No:</b>", styles['ArkBody']),
             Paragraph(txn_id, styles['ArkBody'])
         ],
         [
             Paragraph("<b>Balance Consideration:</b>", styles['ArkBody']),
             Paragraph(f"Rs. {bal_amt}" if bal_amt != "-" and not bal_amt.startswith("Rs") and not bal_amt.startswith("₹") else bal_amt, styles['ArkBody']),
-            Paragraph("<b>Payment Terms / Due:</b>", styles['ArkBody']),
+            Paragraph("<b>Payment Terms / Schedule:</b>", styles['ArkBody']),
             Paragraph(due_date, styles['ArkBody'])
-        ],
-        [
-            Paragraph("<b>Receipt Verification:</b>", styles['ArkBody']),
-            Paragraph(f"<font color='#0a1628'><b>&#10004; {receipt_status}</b></font>", styles['ArkBody']),
-            Paragraph("<b>Audit Status:</b>", styles['ArkBody']),
-            Paragraph("<font color='#16a34a'><b>Company Receipt Acknowledged</b></font>", styles['ArkBody'])
         ]
     ]
     fin_table = Table(fin_table_data, colWidths=[120, 160, 110, 150])
     fin_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f0fdf4")),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#86efac")),
-        ('PADDING', (0,0), (-1,-1), 2),
+        ('PADDING', (0,0), (-1,-1), 3),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
     story.append(fin_table)
     story.append(Spacer(1, 4))
 
-    # Terms & Conditions Section
-    terms_html = (
-        "<b>TERMS &amp; DECLARATION:</b><br/>"
-        "1. This Application &amp; Advance Booking Form confirms provisional allotment of the cited plot, subject to clearance of payment.<br/>"
-        "2. The applicant confirms having inspected the site, layout approval status, and agreed to the pricing structure of ARK Infra.<br/>"
-        "3. Remaining balance shall be disbursed as per the agreed schedule prior to final registered sale conveyance.<br/>"
-        "4. This application is sensitive and confidential, securely verified under ARK Infra bylaws. Jurisdiction: Visakhapatnam."
+    # Clean Declaration
+    declaration_text = (
+        "<b>DECLARATION:</b> I hereby apply for the provisional booking and allotment of the cited plot "
+        "and confirm that the particulars provided above are true and accurate. "
+        "I agree to adhere to the payment schedule and terms of ARK Infra and Developers."
     )
-    terms_table = Table([[Paragraph(terms_html, styles['ArkMuted'])]], colWidths=[540])
-    terms_table.setStyle(TableStyle([
+    decl_table = Table([[Paragraph(declaration_text, styles['ArkMuted'])]], colWidths=[540])
+    decl_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
-        ('PADDING', (0,0), (-1,-1), 3),
+        ('PADDING', (0,0), (-1,-1), 4),
     ]))
-    story.append(terms_table)
-    story.append(Spacer(1, 5))
+    story.append(decl_table)
+    story.append(Spacer(1, 8))
 
-    # Signatures & Official Stamp
+    # Physical Signatures & Official Stamp Seal Area (Clean, Decent for Management Signing & Stamping)
+    seal_table = Table(
+        [[Paragraph("<font size='8' color='#475569'><b>OFFICIAL SEAL AREA</b><br/><font size='7' color='#94a3b8'>(COMPANY STAMP)</font></font>", styles['ArkBody'])]],
+        colWidths=[150],
+        rowHeights=[55]
+    )
+    seal_table.setStyle(TableStyle([
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#94a3b8")),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+
     sig_data = [
         [
-            Paragraph("<br/><br/>___________________________<br/><b>APPLICANT SIGNATURE</b><br/><font color='#64748b' size='7'>(" + c_name + ")</font>", styles['ArkBody']),
-            stamp_img or Paragraph("<br/><br/><b>[ ARK INFRA OFFICIAL SEAL ]</b>", styles['ArkBody']),
-            Table([
-                [sig_md or "", sig_ceo or ""],
-                [
-                    Paragraph("<b>Adari Ramakrishna</b><br/><font color='#64748b' size='7'>Managing Director</font>", styles['ArkBody']),
-                    Paragraph("<b>Konathala Arun</b><br/><font color='#64748b' size='7'>Chief Executive Officer</font>", styles['ArkBody'])
-                ],
-                [Paragraph("<font color='#c9a962' size='7'><b>FOR ARK INFRA AND DEVELOPERS</b></font>", styles['ArkBody']), ""]
-            ], colWidths=[105, 105])
+            Paragraph("<br/><br/><br/>___________________________________<br/><b>SIGNATURE OF APPLICANT</b><br/><font color='#64748b' size='7'>(" + c_name + ")</font>", styles['ArkBody']),
+            seal_table,
+            Paragraph("<br/><br/><br/>___________________________________<br/><b>AUTHORIZED SIGNATORY</b><br/><font color='#050d1a' size='8'><b>ARK Infra and Developers</b></font><br/><font color='#64748b' size='6'>Management Desk</font>", styles['ArkBody'])
         ]
     ]
-    sig_table = Table(sig_data, colWidths=[150, 160, 230])
+    sig_table = Table(sig_data, colWidths=[190, 160, 190])
     sig_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (0,0), 'LEFT'),
         ('ALIGN', (1,0), (1,0), 'CENTER'),
-        ('ALIGN', (2,0), (2,0), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
-        ('PADDING', (0,0), (-1,-1), 1),
+        ('ALIGN', (2,0), (2,0), 'RIGHT'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('PADDING', (0,0), (-1,-1), 2),
     ]))
     story.append(sig_table)
 

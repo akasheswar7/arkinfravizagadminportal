@@ -1492,32 +1492,14 @@
           </div>
         </div>
 
-        <!-- 5. Verification & Company Authorization Preview -->
+        <!-- 5. Verification & Management Endorsement -->
         <div style="background:rgba(201,169,98,0.06); border:1px solid rgba(201,169,98,0.3); border-radius:6px; padding:0.75rem 1rem; margin-bottom:1rem;">
-          <h4 style="font-size:0.9rem; color:var(--gold); margin-bottom:0.5rem; display:flex; align-items:center; gap:0.4rem;">
-            🛡️ 5. Official Verification &amp; Authorization (ARK Infra Management)
+          <h4 style="font-size:0.9rem; color:var(--gold); margin-bottom:0.35rem; display:flex; align-items:center; gap:0.4rem;">
+            🏛️ 5. Physical Signatures &amp; Seal Endorsement
           </h4>
-          <p style="font-size:0.74rem; color:var(--text-muted); line-height:1.4; margin-bottom:0.75rem;">
-            This application is verified by the executive desk of ARK Infra and Developers. Upon saving, the document is officially sealed with the corporate stamp and signed by the Managing Director and Chief Executive Officer.
+          <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4; margin:0;">
+            <b>Management Physical Endorsement:</b> The official application PDF is formatted with clean designated signature lines and company seal box. Signatures and official stamps are affixed physically by ARK Infra Management upon allotment.
           </p>
-
-          <div style="display: flex; justify-content: space-around; align-items: center; background: rgba(5,13,26,0.6); border: 1px dashed rgba(201,169,98,0.4); padding: 0.75rem; border-radius: 6px;">
-            <div style="text-align: center;">
-              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">OFFICIAL STAMP</div>
-              <img src="images/ark-stamp.png" style="width: 60px; height: 60px; object-fit: contain;" alt="ARK Infra Stamp">
-              <div style="font-size: 0.65rem; color: #4ade80;">✓ Verified Seal</div>
-            </div>
-            <div style="text-align: center;">
-              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">MANAGING DIRECTOR</div>
-              <img src="images/signature-md.png" style="width: 85px; height: 30px; object-fit: contain;" alt="MD Signature">
-              <div style="font-size: 0.65rem; color: #fff;">Adari Ramakrishna</div>
-            </div>
-            <div style="text-align: center;">
-              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">CHIEF EXECUTIVE OFFICER</div>
-              <img src="images/signature-ceo.png" style="width: 85px; height: 30px; object-fit: contain;" alt="CEO Signature">
-              <div style="font-size: 0.65rem; color: #fff;">Konathala Arun</div>
-            </div>
-          </div>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
@@ -2165,7 +2147,14 @@
           let absoluteUrl = normalizeImageUrl(data.url);
           if (absoluteUrl.endsWith(",")) absoluteUrl = absoluteUrl.slice(0, -1).trim();
 
-          const isPdfFile = data.is_pdf || absoluteUrl.endsWith(".pdf") || (file && file.type === "application/pdf");
+          const isPdfFile = Boolean(data.is_pdf || absoluteUrl.endsWith(".pdf") || (file && file.type === "application/pdf"));
+          const isVideoFile = Boolean(
+            data.is_video ||
+            (file && file.type && file.type.startsWith("video/")) ||
+            absoluteUrl.endsWith(".mp4") ||
+            absoluteUrl.endsWith(".webm") ||
+            absoluteUrl.endsWith(".mov")
+          );
 
           if (isVideoFile) {
             const videoInput = document.getElementById("galleryVideoUrl");
@@ -2192,7 +2181,11 @@
               }
             }
           } else {
-            if (targetInput) targetInput.value = absoluteUrl;
+            if (targetInput) {
+              targetInput.value = absoluteUrl;
+              try { targetInput.dispatchEvent(new Event("input")); } catch (ign) {}
+              try { targetInput.dispatchEvent(new Event("change")); } catch (ign) {}
+            }
             if (container) {
               const thumb = container.querySelector(".preview-thumb");
               if (thumb && !isPdfFile) thumb.src = absoluteUrl;
@@ -2208,6 +2201,9 @@
                 statusDiv.style.color = "#4ade80";
                 statusDiv.innerHTML = isPdfFile ? `✓ PDF / Document uploaded successfully` : `✓ Uploaded and optimized successfully`;
               }
+            }
+            if (targetUrlInputId === "appPhotoUrl" && typeof updateAppPhotoPreview === "function") {
+              updateAppPhotoPreview(absoluteUrl);
             }
           }
           showToast(isPdfFile ? "PDF Document uploaded successfully!" : "Media uploaded successfully!");
@@ -5277,30 +5273,29 @@ const DEFAULT_PROJECTS = [
 
         <!-- 4. Terms & Declarations -->
         <div style="font-size:9px; color:#64748b; line-height:1.4; border:1px solid #e2e8f0; background:#f8fafc; padding:8px 10px; border-radius:4px; margin-bottom:14px;">
-          <b>TERMS &amp; DECLARATION:</b> 1. This Application &amp; Advance Booking Form confirms provisional allotment of cited plot subject to clearance of payment. 2. The applicant confirms having inspected the site, layout approval status, and agreed to the pricing structure of ARK Infra. 3. Remaining balance shall be disbursed as per the agreed schedule prior to registered sale deed execution. 4. This application is sensitive and confidential, securely verified under ARK Infra corporate bylaws. Legal jurisdiction: Visakhapatnam.
+          <b>DECLARATION:</b> I hereby apply for provisional booking of the cited plot and confirm that the particulars provided above are true to the best of my knowledge. I agree to the payment schedule and terms of ARK Infra and Developers.
         </div>
 
-        <!-- 5. Official Seals & Authorized Signatures -->
-        <div style="display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:12px; align-items:flex-end; padding-top:10px; border-top:1px dashed #cbd5e1;">
+        <!-- 5. Physical Signatures & Company Seal Endorsement -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; align-items:flex-end; padding-top:16px; border-top:1px dashed #cbd5e1;">
           <div style="text-align:left;">
-            <div style="font-size:11px; font-weight:700; color:#0f172a; margin-top:35px; border-top:1px solid #64748b; padding-top:4px;">APPLICANT SIGNATURE</div>
+            <div style="height:40px;"></div>
+            <div style="font-size:11px; font-weight:700; color:#0f172a; border-top:1.5px solid #334155; padding-top:6px;">SIGNATURE OF APPLICANT</div>
             <div style="font-size:9px; color:#64748b;">(${a.customer_name})</div>
           </div>
 
           <div style="text-align:center;">
-            <img src="images/ark-stamp.png" style="width:75px; height:75px; object-fit:contain; margin-bottom:2px;" alt="Official ARK Infra Stamp">
-            <div style="font-size:9px; font-weight:700; color:#1e3d66;">OFFICIAL CORPORATE SEAL</div>
-            <div style="font-size:8px; color:#16a34a;">VERIFIED &amp; APPROVED</div>
+            <div style="border:1.5px dashed #94a3b8; border-radius:4px; padding:12px 6px; min-height:55px; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#f8fafc;">
+              <div style="font-size:9px; font-weight:700; color:#475569; letter-spacing:0.5px;">OFFICIAL SEAL AREA</div>
+              <div style="font-size:8px; color:#94a3b8; margin-top:2px;">(ARK INFRA COMPANY STAMP)</div>
+            </div>
           </div>
 
           <div style="text-align:right;">
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:2px;">
-              <img src="images/signature-md.png" style="width:80px; height:28px; object-fit:contain;" alt="MD Signature">
-              <img src="images/signature-ceo.png" style="width:80px; height:28px; object-fit:contain;" alt="CEO Signature">
-            </div>
-            <div style="font-size:10px; font-weight:700; color:#050d1a;">Adari Ramakrishna (MD) &bull; Konathala Arun (CEO)</div>
-            <div style="font-size:9px; font-weight:600; color:#9a7b3a;">FOR ARK INFRA AND DEVELOPERS</div>
-            <div style="font-size:8px; color:#64748b;">Authorized Signatories</div>
+            <div style="height:40px;"></div>
+            <div style="font-size:11px; font-weight:700; color:#0f172a; border-top:1.5px solid #334155; padding-top:6px;">AUTHORIZED SIGNATORY</div>
+            <div style="font-size:9px; font-weight:600; color:#0f172a;">ARK Infra and Developers</div>
+            <div style="font-size:8px; color:#64748b;">Management Desk</div>
           </div>
         </div>
       `;
