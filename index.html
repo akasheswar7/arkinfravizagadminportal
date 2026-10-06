@@ -1421,11 +1421,31 @@
             </div>
             <div class="form-group">
               <label class="form-label">Assigned Director (If any)</label>
-              <input type="text" id="appDirectorName" class="form-input" placeholder="e.g. KONATHALA ARUN">
+              <select id="appDirectorSelect" class="form-select" onchange="onAppDirectorChange()">
+                <option value="">Select Director...</option>
+                <option value="6ab51350498b4e47714a2bd5" data-name="ADARI RAMAKRISHNA">ADARI RAMAKRISHNA</option>
+                <option value="6ab51665f127d6b0ce2c9a83" data-name="KONATHALA ARUN">KONATHALA ARUN</option>
+                <option value="6abf694e75af2063649ed571" data-name="ADARI VENKATARAO ">ADARI VENKATARAO </option>
+                <option value="6abf6abe75af2063649ed57a" data-name="Y.VIGNESH">Y.VIGNESH</option>
+                <option value="6abf6cbdf6ddc0b96e3581f1" data-name="ASSISTANT BRANCH MANAGER">ASSISTANT BRANCH MANAGER</option>
+                <option value="6abf6eb226f6ea401698e128" data-name="M.SRAVANI">M.SRAVANI</option>
+                <option value="6abf701926f6ea401698e12d" data-name="MISHRA">MISHRA</option>
+                <option value="6abf706b2220b0a9ccec225b" data-name="DHANARAJ">DHANARAJ</option>
+                <option value="6abf70f626f6ea401698e132" data-name="NANAJI">NANAJI</option>
+                <option value="6abf72d326f6ea401698e13b" data-name="BALU ">BALU </option>
+                <option value="6abf731926f6ea401698e13c" data-name="VENKAT">VENKAT</option>
+                <option value="6abf73fb2220b0a9ccec225c" data-name="RATNAM">RATNAM</option>
+                <option value="6abf84aa6ee5502f446b9b88" data-name="SRAVANI">SRAVANI</option>
+                <option value="6abf9521a69fde9c3b78be6b" data-name="SAMBHA">SAMBHA</option>
+              </select>
+              <input type="hidden" id="appDirectorName">
             </div>
             <div class="form-group">
               <label class="form-label">Assigned Agent (If any)</label>
-              <input type="text" id="appAgentName" class="form-input" placeholder="e.g. DODDI ESWAR AKASH">
+              <select id="appAgentSelect" class="form-select" onchange="onAppAgentChange()">
+                <option value="">Select Agent...</option>
+              </select>
+              <input type="hidden" id="appAgentName">
             </div>
           </div>
         </div>
@@ -4458,9 +4478,24 @@ const DEFAULT_PROJECTS = [
         if (cur) agentDirSelect.value = cur;
       }
 
+      // Populate Site Application modal Director select
+      const appDirSelect = document.getElementById("appDirectorSelect");
+      if (appDirSelect) {
+        const cur = appDirSelect.value;
+        let html = '<option value="">Select Director...</option>';
+        dirs.forEach(d => {
+          const dName = d.name || d.full_name || "Director";
+          const dId = d.id || d._id || "";
+          html += `<option value="${dId}" data-name="${dName}">${dName}</option>`;
+        });
+        appDirSelect.innerHTML = html;
+        if (cur) appDirSelect.value = cur;
+      }
+
       // 2. Agents Filter & Modal Select
       await onCustomerDirectorFilterChange(false);
       await onModalDirectorChange(false);
+      await onAppDirectorChange(false);
 
       // 3. Projects / Venture Select
       const projSelect = document.getElementById("customerProjectSelect");
@@ -4473,6 +4508,30 @@ const DEFAULT_PROJECTS = [
         });
         projSelect.innerHTML = html;
         if (cur) projSelect.value = cur;
+      }
+
+      const appVentureSelect = document.getElementById("appVentureSelect");
+      if (appVentureSelect) {
+        const cur = appVentureSelect.value;
+        let html = '<option value="">Select Venture...</option>';
+        projs.forEach(p => {
+          const title = (typeof p === 'string') ? p : (p.title || p.name || "Venture");
+          html += `<option value="${title}">${title}</option>`;
+        });
+        appVentureSelect.innerHTML = html;
+        if (cur) appVentureSelect.value = cur;
+      }
+
+      const appVentureFilter = document.getElementById("appVentureFilter");
+      if (appVentureFilter) {
+        const cur = appVentureFilter.value;
+        let html = '<option value="all">All Ventures</option>';
+        projs.forEach(p => {
+          const title = (typeof p === 'string') ? p : (p.title || p.name || "Venture");
+          html += `<option value="${title}">${title}</option>`;
+        });
+        appVentureFilter.innerHTML = html;
+        if (cur) appVentureFilter.value = cur;
       }
     }
 
@@ -4630,6 +4689,164 @@ const DEFAULT_PROJECTS = [
       if (!resetAgent && curAgentVal) {
         const exists = ags.some(a => String(a.id || a._id || a.name) === String(curAgentVal));
         if (exists) agentSelect.value = curAgentVal;
+      }
+    }
+
+    function onAppAgentChange() {
+      const agentSelect = document.getElementById("appAgentSelect");
+      const dirSelect = document.getElementById("appDirectorSelect");
+      const agentHidden = document.getElementById("appAgentName");
+      const dirHidden = document.getElementById("appDirectorName");
+      if (!agentSelect) return;
+
+      const selOpt = agentSelect.options[agentSelect.selectedIndex];
+      const selectedAgentId = agentSelect.value;
+      let agentName = selOpt ? (selOpt.getAttribute("data-name") || selOpt.text) : "";
+      if (agentName.includes("(")) agentName = agentName.split("(")[0].trim();
+      if (agentHidden) agentHidden.value = agentName;
+
+      if (!selectedAgentId || !dirSelect) return;
+
+      const ags = (Array.isArray(allAgentsList) && allAgentsList.length > 0) ? allAgentsList : (Array.isArray(cachedAgents) ? cachedAgents : []);
+      const agentObj = ags.find(a => String(a.id || a._id || a.name) === String(selectedAgentId) || String(a.full_name || a.name) === String(agentName));
+      if (agentObj) {
+        const targetDirName = (typeof agentObj === 'object') ? (agentObj.team_head_name || agentObj.director_name || "") : "";
+        if (targetDirName && (!dirSelect.value || dirSelect.options[dirSelect.selectedIndex]?.text?.toLowerCase().includes("select director"))) {
+          const normTarget = normalizeDirectorName(targetDirName);
+          for (let i = 0; i < dirSelect.options.length; i++) {
+            const opt = dirSelect.options[i];
+            const optName = normalizeDirectorName(opt.getAttribute("data-name") || opt.text || "");
+            if (optName && normTarget && (optName.includes(normTarget) || normTarget.includes(optName))) {
+              dirSelect.selectedIndex = i;
+              if (dirHidden) dirHidden.value = opt.getAttribute("data-name") || opt.text;
+              onAppDirectorChange(false);
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    async function onAppDirectorChange(resetAgent = true) {
+      const dirSelect = document.getElementById("appDirectorSelect");
+      const agentSelect = document.getElementById("appAgentSelect");
+      const dirHidden = document.getElementById("appDirectorName");
+      const agentHidden = document.getElementById("appAgentName");
+      if (!agentSelect) return;
+
+      let ags = (Array.isArray(allAgentsList) && allAgentsList.length > 0) ? allAgentsList : (Array.isArray(cachedAgents) ? cachedAgents : []);
+      if (!ags || ags.length === 0) {
+        ags = await ensureAgentsLoaded(true);
+      }
+
+      const dirId = dirSelect ? String(dirSelect.value || "").trim() : "";
+      const selectedOpt = dirSelect && dirSelect.selectedIndex >= 0 ? dirSelect.options[dirSelect.selectedIndex] : null;
+      const rawDirName = selectedOpt ? (selectedOpt.getAttribute("data-name") || selectedOpt.dataset.name || selectedOpt.text || "").trim() : "";
+      if (dirHidden) {
+        dirHidden.value = (selectedOpt && dirSelect.value && !rawDirName.toLowerCase().includes("select director")) ? rawDirName : "";
+      }
+
+      const curAgentVal = agentSelect.value;
+      const curAgentName = agentHidden ? agentHidden.value : "";
+
+      // 1. If NO director selected, show all agents
+      if (!dirId || rawDirName.toLowerCase().includes("select director")) {
+        let optionsHtml = `<option value="">Select Agent (${ags.length} Agents Available)...</option>`;
+        ags.forEach(a => {
+          const aName = (typeof a === 'string') ? a : (a.full_name || a.name || "Agent");
+          const aId = (typeof a === 'string') ? a : (a.id || a._id || a.name || "");
+          const teamHead = (typeof a === 'object') ? (a.team_head_name || a.director_name || "") : "";
+          const teamStr = teamHead ? ` (${teamHead})` : "";
+          optionsHtml += `<option value="${aId}" data-name="${aName}">${aName}${teamStr}</option>`;
+        });
+        agentSelect.innerHTML = optionsHtml;
+        if (!resetAgent) {
+          if (curAgentVal) agentSelect.value = curAgentVal;
+          else if (curAgentName) {
+            for (let i = 0; i < agentSelect.options.length; i++) {
+              const opt = agentSelect.options[i];
+              const optName = opt.getAttribute("data-name") || opt.text;
+              if (optName === curAgentName || optName.includes(curAgentName)) {
+                agentSelect.selectedIndex = i;
+                break;
+              }
+            }
+          }
+        }
+        return;
+      }
+
+      // 2. Filter matching team members
+      const dirTokens = getDirectorTokens(rawDirName);
+      const rawUpperDir = rawDirName.toUpperCase();
+
+      let matchingAgents = [];
+      let otherAgents = [];
+
+      ags.forEach(a => {
+        const aDirId = String(a.director_id || "").trim();
+        const aTeamHead = String(a.team_head_name || "").trim();
+        const aDirName = String(a.director_name || "").trim();
+
+        let isMatch = false;
+        if (dirId && aDirId && (aDirId === dirId || String(dirId).includes(aDirId) || String(aDirId).includes(dirId))) isMatch = true;
+        if (aTeamHead && (aTeamHead.toUpperCase() === rawUpperDir || aTeamHead.toUpperCase().includes(rawUpperDir) || rawUpperDir.includes(aTeamHead.toUpperCase()))) isMatch = true;
+        if (aDirName && (aDirName.toUpperCase() === rawUpperDir || aDirName.toUpperCase().includes(rawUpperDir) || rawUpperDir.includes(aDirName.toUpperCase()))) isMatch = true;
+        if (dirTokens.length > 0) {
+          const headTokens = getDirectorTokens(aTeamHead).concat(getDirectorTokens(aDirName));
+          if (dirTokens.some(t => headTokens.includes(t))) isMatch = true;
+        }
+
+        if (isMatch) matchingAgents.push(a);
+        else otherAgents.push(a);
+      });
+
+      let optionsHtml = `<option value="">Select Agent (${ags.length} Available)...</option>`;
+      if (matchingAgents.length > 0) {
+        optionsHtml += `<optgroup label="Direct Team Members for ${rawDirName} (${matchingAgents.length})">`;
+        matchingAgents.forEach(a => {
+          const aName = (typeof a === 'string') ? a : (a.full_name || a.name || "Agent");
+          const aId = (typeof a === 'string') ? a : (a.id || a._id || a.name || "");
+          const teamHead = (typeof a === 'object') ? (a.team_head_name || a.director_name || "") : "";
+          const teamStr = teamHead ? ` (${teamHead})` : "";
+          optionsHtml += `<option value="${aId}" data-name="${aName}">${aName}${teamStr}</option>`;
+        });
+        optionsHtml += `</optgroup>`;
+
+        if (otherAgents.length > 0) {
+          optionsHtml += `<optgroup label="All Other Agents (${otherAgents.length})">`;
+          otherAgents.forEach(a => {
+            const aName = (typeof a === 'string') ? a : (a.full_name || a.name || "Agent");
+            const aId = (typeof a === 'string') ? a : (a.id || a._id || a.name || "");
+            const teamHead = (typeof a === 'object') ? (a.team_head_name || a.director_name || "") : "";
+            const teamStr = teamHead ? ` (${teamHead})` : "";
+            optionsHtml += `<option value="${aId}" data-name="${aName}">${aName}${teamStr}</option>`;
+          });
+          optionsHtml += `</optgroup>`;
+        }
+      } else {
+        ags.forEach(a => {
+          const aName = (typeof a === 'string') ? a : (a.full_name || a.name || "Agent");
+          const aId = (typeof a === 'string') ? a : (a.id || a._id || a.name || "");
+          const teamHead = (typeof a === 'object') ? (a.team_head_name || a.director_name || "") : "";
+          const teamStr = teamHead ? ` (${teamHead})` : "";
+          optionsHtml += `<option value="${aId}" data-name="${aName}">${aName}${teamStr}</option>`;
+        });
+      }
+
+      agentSelect.innerHTML = optionsHtml;
+      if (!resetAgent) {
+        if (curAgentVal) agentSelect.value = curAgentVal;
+        else if (curAgentName) {
+          for (let i = 0; i < agentSelect.options.length; i++) {
+            const opt = agentSelect.options[i];
+            const optName = opt.getAttribute("data-name") || opt.text;
+            if (optName === curAgentName || optName.includes(curAgentName)) {
+              agentSelect.selectedIndex = i;
+              break;
+            }
+          }
+        }
       }
     }
 
@@ -4985,7 +5202,7 @@ const DEFAULT_PROJECTS = [
       }
     }
 
-    function openAddApplicationModal() {
+    async function openAddApplicationModal() {
       document.getElementById("applicationForm").reset();
       document.getElementById("appEditId").value = "";
       document.getElementById("appCustomerId").value = "";
@@ -4993,6 +5210,16 @@ const DEFAULT_PROJECTS = [
       document.getElementById("appReceiptUrl").value = "";
       document.getElementById("appPhotoPreview").style.display = "none";
       document.getElementById("appReceiptPreview").style.display = "none";
+
+      const dirSelect = document.getElementById("appDirectorSelect");
+      if (dirSelect) dirSelect.value = "";
+      const dirHidden = document.getElementById("appDirectorName");
+      if (dirHidden) dirHidden.value = "";
+      const agentSelect = document.getElementById("appAgentSelect");
+      if (agentSelect) agentSelect.value = "";
+      const agentHidden = document.getElementById("appAgentName");
+      if (agentHidden) agentHidden.value = "";
+      await onAppDirectorChange(false);
 
       const today = new Date().toISOString().substring(0, 10);
       document.getElementById("appDate").value = today;
@@ -5004,7 +5231,7 @@ const DEFAULT_PROJECTS = [
       openModal("applicationModal");
     }
 
-    function openApplicationFromLead(leadId) {
+    async function openApplicationFromLead(leadId) {
       const c = cachedCustomers.find(x => x.id === leadId);
       if (!c) {
         showToast("Customer lead not found.", true);
@@ -5034,8 +5261,44 @@ const DEFAULT_PROJECTS = [
       document.getElementById("appAdvanceAmount").value = c.advance_amount || "10,000";
 
       document.getElementById("appSupportedBy").value = c.supported_by || (c.director_name ? "Director: " + c.director_name : "Direct / Walk-in (Company Own)");
-      document.getElementById("appDirectorName").value = c.director_name || "";
-      document.getElementById("appAgentName").value = c.agent_name || "";
+      
+      const dirSelect = document.getElementById("appDirectorSelect");
+      const dirHidden = document.getElementById("appDirectorName");
+      if (dirHidden) dirHidden.value = c.director_name || "";
+      if (dirSelect && c.director_name) {
+        const normDir = normalizeDirectorName(c.director_name);
+        let matched = false;
+        for (let i = 0; i < dirSelect.options.length; i++) {
+          const opt = dirSelect.options[i];
+          const optName = normalizeDirectorName(opt.getAttribute("data-name") || opt.text || "");
+          if (optName && normDir && (optName.includes(normDir) || normDir.includes(optName))) {
+            dirSelect.selectedIndex = i;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) dirSelect.value = "";
+      } else if (dirSelect) {
+        dirSelect.value = "";
+      }
+
+      await onAppDirectorChange(false);
+
+      const agentSelect = document.getElementById("appAgentSelect");
+      const agentHidden = document.getElementById("appAgentName");
+      if (agentHidden) agentHidden.value = c.agent_name || "";
+      if (agentSelect && c.agent_name) {
+        const normAgent = c.agent_name.trim().toLowerCase();
+        for (let i = 0; i < agentSelect.options.length; i++) {
+          const opt = agentSelect.options[i];
+          let optName = (opt.getAttribute("data-name") || opt.text || "").trim().toLowerCase();
+          if (optName.includes("(")) optName = optName.split("(")[0].trim();
+          if (optName && normAgent && (optName === normAgent || optName.includes(normAgent) || normAgent.includes(optName))) {
+            agentSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
 
       document.getElementById("appReceiptUrl").value = c.receipt_url || "";
       if (c.receipt_url) {
@@ -5048,7 +5311,7 @@ const DEFAULT_PROJECTS = [
       openModal("applicationModal");
     }
 
-    function editSiteApplication(id) {
+    async function editSiteApplication(id) {
       const a = cachedSiteApplications.find(x => x.id === id);
       if (!a) return;
 
@@ -5081,8 +5344,44 @@ const DEFAULT_PROJECTS = [
       document.getElementById("appSiteVisitNotes").value = a.site_visit_notes || "";
 
       document.getElementById("appSupportedBy").value = a.supported_by || "";
-      document.getElementById("appDirectorName").value = a.director_name || "";
-      document.getElementById("appAgentName").value = a.agent_name || "";
+      
+      const dirSelect = document.getElementById("appDirectorSelect");
+      const dirHidden = document.getElementById("appDirectorName");
+      if (dirHidden) dirHidden.value = a.director_name || "";
+      if (dirSelect && a.director_name) {
+        const normDir = normalizeDirectorName(a.director_name);
+        let matched = false;
+        for (let i = 0; i < dirSelect.options.length; i++) {
+          const opt = dirSelect.options[i];
+          const optName = normalizeDirectorName(opt.getAttribute("data-name") || opt.text || "");
+          if (optName && normDir && (optName.includes(normDir) || normDir.includes(optName))) {
+            dirSelect.selectedIndex = i;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) dirSelect.value = "";
+      } else if (dirSelect) {
+        dirSelect.value = "";
+      }
+
+      await onAppDirectorChange(false);
+
+      const agentSelect = document.getElementById("appAgentSelect");
+      const agentHidden = document.getElementById("appAgentName");
+      if (agentHidden) agentHidden.value = a.agent_name || "";
+      if (agentSelect && a.agent_name) {
+        const normAgent = a.agent_name.trim().toLowerCase();
+        for (let i = 0; i < agentSelect.options.length; i++) {
+          const opt = agentSelect.options[i];
+          let optName = (opt.getAttribute("data-name") || opt.text || "").trim().toLowerCase();
+          if (optName.includes("(")) optName = optName.split("(")[0].trim();
+          if (optName && normAgent && (optName === normAgent || optName.includes(normAgent) || normAgent.includes(optName))) {
+            agentSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
 
       document.getElementById("appAdvanceAmount").value = a.advance_amount || "";
       document.getElementById("appAdvanceWords").value = a.advance_amount_words || "";
@@ -5106,6 +5405,31 @@ const DEFAULT_PROJECTS = [
       e.preventDefault();
       const id = document.getElementById("appEditId").value;
       const phoneVal = (document.getElementById("appPhone").value || "").trim();
+
+      // Resolve Director & Agent names accurately from selects or hidden fields
+      let dirNameVal = "";
+      const dirSelect = document.getElementById("appDirectorSelect");
+      if (dirSelect && dirSelect.value && dirSelect.selectedIndex >= 0) {
+        const opt = dirSelect.options[dirSelect.selectedIndex];
+        dirNameVal = (opt.getAttribute("data-name") || opt.text || "").trim();
+        if (dirNameVal.toLowerCase().includes("select director")) dirNameVal = "";
+      }
+      if (!dirNameVal) {
+        dirNameVal = (document.getElementById("appDirectorName")?.value || "").trim();
+      }
+
+      let agentNameVal = "";
+      const agentSelect = document.getElementById("appAgentSelect");
+      if (agentSelect && agentSelect.value && agentSelect.selectedIndex >= 0) {
+        const opt = agentSelect.options[agentSelect.selectedIndex];
+        agentNameVal = (opt.getAttribute("data-name") || opt.text || "").trim();
+        if (agentNameVal.includes("(")) agentNameVal = agentNameVal.split("(")[0].trim();
+        if (agentNameVal.toLowerCase().includes("select agent")) agentNameVal = "";
+      }
+      if (!agentNameVal) {
+        agentNameVal = (document.getElementById("appAgentName")?.value || "").trim();
+        if (agentNameVal.includes("(")) agentNameVal = agentNameVal.split("(")[0].trim();
+      }
 
       const payload = {
         application_no: (document.getElementById("appNumber").value || "").trim(),
@@ -5132,9 +5456,9 @@ const DEFAULT_PROJECTS = [
         rate_per_sq_yd: (document.getElementById("appRatePerSqYd").value || "").trim() || null,
         total_site_value: (document.getElementById("appTotalValue").value || "").trim() || null,
 
-        supported_by: (document.getElementById("appSupportedBy").value || "").trim() || null,
-        director_name: (document.getElementById("appDirectorName").value || "").trim() || null,
-        agent_name: (document.getElementById("appAgentName").value || "").trim() || null,
+        supported_by: (document.getElementById("appSupportedBy").value || "").trim() || (dirNameVal ? "Director: " + dirNameVal : null),
+        director_name: dirNameVal || null,
+        agent_name: agentNameVal || null,
 
         advance_amount: (document.getElementById("appAdvanceAmount").value || "").trim(),
         advance_amount_words: (document.getElementById("appAdvanceWords").value || "").trim() || null,
