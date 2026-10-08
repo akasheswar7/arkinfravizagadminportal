@@ -6570,6 +6570,7 @@ const DEFAULT_PROJECTS = [
           if (res.ok && data.success) {
             let detailMsg = `✅ Successfully delivered to ${data.sent} contacts!`;
             if (data.failed > 0) {
+              prepareWhatsAppBroadcast();
               detailMsg += `\n⚠️ ${data.failed} failed.`;
               let errText = (data.sample_errors && data.sample_errors[0]) || "";
               if (errText.includes("not in allowed list") || errText.includes("131030")) {
