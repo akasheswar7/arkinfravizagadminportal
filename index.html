@@ -845,7 +845,9 @@
                 </div>
                 
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <input type="text" id="waMemberSearch" placeholder="🔍 Search member..." oninput="filterMembersList(this.value)" class="form-input" style="padding: 5px 12px; font-size: 0.82rem; width: 170px;">
+                  <button class="btn btn-outline btn-sm" onclick="copySelectedNumbers()" style="border-color: rgba(255,255,255,0.2); color: #fff;">
+                    📋 Copy All Numbers
+                  </button>
                   <button id="waTurboBtn" class="btn btn-gold btn-sm" onclick="startSequentialDispatch()" style="font-weight: 600;">
                     ⚡ Turbo Auto-Send (Selected)
                   </button>
@@ -6597,6 +6599,24 @@ const DEFAULT_PROJECTS = [
       const selectedEl = document.getElementById("waSelectedCount");
       if (selectedEl) selectedEl.textContent = checked ? waPreparedRecipients.length : 0;
       updateTurboBtn();
+    }
+
+    function copySelectedNumbers() {
+      const selected = waPreparedRecipients.filter(r => r.checked && r.clean_phone);
+      if (selected.length === 0) {
+        showArkAlert("No Numbers", "Please tick at least one member with a phone number.", "info");
+        return;
+      }
+      const numbers = selected.map(r => r.clean_phone).join(", ");
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(numbers).then(() => {
+          showToast(`Copied ${selected.length} phone numbers to clipboard!`);
+        }).catch(() => {
+          prompt("Copy phone numbers:", numbers);
+        });
+      } else {
+        prompt("Copy phone numbers:", numbers);
+      }
     }
 
     function filterMembersList(term) {
