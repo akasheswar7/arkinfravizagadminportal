@@ -837,7 +837,7 @@
                 📋 Generate Direct Dispatch Links
               </button>
               <button id="waCloudBroadcastBtn" class="btn btn-outline" onclick="sendAutomatedCloudBroadcast()" style="display: none; border-color: #38bdf8; color: #38bdf8;">
-                ⚡ Send Automated Meta Cloud Broadcast
+                ⚡ Meta Cloud API (Sandbox Test)
               </button>
             </div>
 
@@ -6556,6 +6556,17 @@ const DEFAULT_PROJECTS = [
       const msg = document.getElementById("waMessageInput").value.trim();
       if (!msg) {
         showArkAlert("Message Required", "Please type your announcement before sending.", "info");
+        return;
+      }
+
+      // Check if trying to send to real agents while on Meta Developer Test Sandbox
+      if (team !== "customers_all" && team !== "customers_pending") {
+        showArkAlert(
+          "Meta Sandbox Mode (Test Number)",
+          "You are currently using Meta's free Developer Test Number (+1 555-653-0556).\n\nFacebook's anti-spam rules strictly forbid this practice test number from sending automated messages to real agent phone numbers.\n\n👉 We have automatically prepared the Direct 1-Click WhatsApp links for all your agents below!\nClick 'Turbo Auto-Next' or any green 'Dispatch 💬' button to send right now!",
+          "warning"
+        );
+        prepareWhatsAppBroadcast();
         return;
       }
 
