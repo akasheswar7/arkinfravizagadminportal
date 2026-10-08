@@ -20,6 +20,15 @@ class WhatsAppConfigUpdate(BaseModel):
     api_token: str = Field(..., description="Meta WhatsApp Cloud API Access Token")
     phone_number_id: str = Field(..., description="Meta WhatsApp Phone Number ID")
 
+class GatewayConfigUpdate(BaseModel):
+    instance_id: str = Field(..., description="UltraMsg Instance ID e.g. instance10283")
+    token: str = Field(..., description="UltraMsg Token")
+
+class GatewayBroadcastRequest(BaseModel):
+    director_id: Optional[str] = "all_members"
+    message: str = Field(..., min_length=1, max_length=2000)
+    selected_phones: Optional[List[str]] = None
+
 async def get_effective_whatsapp_creds():
     """Retrieves WhatsApp credentials from MongoDB system_settings, falling back to .env settings."""
     settings_col = get_collection("system_settings")
@@ -330,3 +339,165 @@ async def send_meta_cloud_broadcast(
         "sample_errors": errors[:5],
         "message": f"Cloud broadcast finished: {sent_count} sent successfully, {failed_count} failed."
     }
+
+@router.get("/gateway-config")
+async def get_gateway_config(current_admin: dict = Depends(get_current_admin)):
+    """Returns whether UltraMsg QR Gateway is configured."""
+    settings_col = get_collection("system_settings")
+    doc = await settings_col.find_one({"key": "ultramsg_config"})
+    if doc and doc.get("instance_id") and doc.get("token"):
+        inst = doc.get("instance_id").strip()
+        tok = doc.get("token").strip()
+        return {
+            "configured": True,
+            "instance_id": inst,
+            "token_preview": (tok[:4] + "..." + tok[-4:]) if len(tok) > 8 else "***"
+        }
+    return {"configured": False, "instance_id": "", "token_preview": ""}
+
+@router.get("/gateway-status")
+async def get_gateway_status(current_admin: dict = Depends(get_current_admin)):
+    """Pings UltraMsg instance to verify live WhatsApp linked device status."""
+    settings_col = get_collection("system_settings")
+    doc = await settings_col.find_one({"key": "ultramsg_config"})
+    if not doc or not doc.get("instance_id") or not doc.get("token"):
+        return {"configured": False, "connected": False, "message": "UltraMsg Gateway is not configured yet."}
+
+    instance_id = doc["instance_id"].strip().rstrip("/")
+    if not instance_id.startswith("instance") and instance_id.isdigit():
+        instance_id = f"instance{instance_id}"
+    token = doc["token"].strip()
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"https://api.ultramsg.com/{instance_id}/instance/status", params={"token": token})
+            if resp.status_code == 200:
+                data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+                status_info = data.get("status", {})
+                account_status = status_info.get("account_status") if isinstance(status_info, dict) else str(status_info)
+                is_connected = (account_status == "authenticated")
+                qr_code = data.get("qrCode", "")
+                return {
+                    "configured": True,
+                    "connected": is_connected,
+                    "instance_id": instance_id,
+                    "account_status": account_status or "connected",
+                    "qr_code": qr_code,
+                    "message": "Connected & Ready to Send!" if is_connected else f"Status: {account_status}"
+                }
+            else:
+                return {
+                    "configured": True,
+                    "connected": False,
+                    "instance_id": instance_id,
+                    "message": f"UltraMsg response ({resp.status_code}): {resp.text[:120]}"
+                }
+    except Exception as e:
+        return {
+            "configured": True,
+            "connected": False,
+            "instance_id": instance_id,
+            "message": f"Connection check failed: {str(e)}"
+        }
+
+@router.post("/gateway-config")
+async def save_gateway_config(payload: GatewayConfigUpdate, current_admin: dict = Depends(get_current_admin)):
+    """Saves UltraMsg QR Gateway instance credentials to database."""
+    settings_col = get_collection("system_settings")
+    clean_inst = payload.instance_id.strip().rstrip("/")
+    if not clean_inst.startswith("instance") and clean_inst.isdigit():
+        clean_inst = f"instance{clean_inst}"
+
+    await settings_col.update_one(
+        {"key": "ultramsg_config"},
+        {"$set": {
+            "key": "ultramsg_config",
+            "instance_id": clean_inst,
+            "token": payload.token.strip()
+        }},
+        upsert=True
+    )
+    return {"success": True, "message": "UltraMsg QR Gateway credentials saved successfully!"}
+
+@router.post("/send-gateway-broadcast")
+async def send_gateway_broadcast(
+    payload: GatewayBroadcastRequest,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """
+    Sends automated 100% background bulk WhatsApp messages via UltraMsg QR Gateway.
+    Zero popups, zero tabs opened. Delivers directly into receivers' phones.
+    """
+    settings_col = get_collection("system_settings")
+    doc = await settings_col.find_one({"key": "ultramsg_config"})
+    if not doc or not doc.get("instance_id") or not doc.get("token"):
+        raise HTTPException(
+            status_code=400,
+            detail="UltraMsg QR Gateway is not connected yet. Please connect your instance ID and Token."
+        )
+
+    instance_id = doc["instance_id"].strip().rstrip("/")
+    if not instance_id.startswith("instance") and instance_id.isdigit():
+        instance_id = f"instance{instance_id}"
+    token = doc["token"].strip()
+
+    recipients_raw = await _fetch_recipients(payload.director_id)
+
+    # Filter to only checked / selected phone numbers from owner
+    if payload.selected_phones is not None:
+        recipients = [
+            r for r in recipients_raw
+            if r.get("clean_phone") in payload.selected_phones or r.get("phone") in payload.selected_phones
+        ]
+    else:
+        recipients = recipients_raw
+
+    if not recipients:
+        return {"success": True, "total": 0, "sent": 0, "failed": 0, "message": "No matching contacts found."}
+
+    ultramsg_url = f"https://api.ultramsg.com/{instance_id}/messages/chat"
+    sent_count = 0
+    failed_count = 0
+    errors = []
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        for r in recipients:
+            target_number = r.get("clean_phone")
+            if not target_number:
+                failed_count += 1
+                continue
+
+            # Ensure proper international format with plus or standard without plus
+            target_to = target_number if target_number.startswith("+") else ("+" + target_number)
+
+            data = {
+                "token": token,
+                "to": target_to,
+                "body": payload.message
+            }
+
+            try:
+                resp = await client.post(ultramsg_url, data=data)
+                if resp.status_code in [200, 201]:
+                    res_json = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+                    if res_json.get("sent") in ["true", True] or res_json.get("message") == "ok" or "id" in res_json or res_json.get("success") is True:
+                        sent_count += 1
+                    else:
+                        failed_count += 1
+                        errors.append(f"{r['name']}: {resp.text}")
+                else:
+                    failed_count += 1
+                    errors.append(f"{r['name']}: {resp.text}")
+            except Exception as e:
+                failed_count += 1
+                errors.append(f"{r['name']}: {str(e)}")
+
+    return {
+        "success": True,
+        "total": len(recipients),
+        "sent": sent_count,
+        "failed": failed_count,
+        "sample_errors": errors[:5],
+        "message": f"Background broadcast finished: Delivered to {sent_count} contacts! ({failed_count} failed)"
+    }
+
