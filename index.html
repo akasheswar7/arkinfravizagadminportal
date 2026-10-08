@@ -782,27 +782,98 @@
 
         <!-- SECTION 8: WHATSAPP BROADCAST -->
         <section id="tab-whatsapp" style="display: none;">
-          <div class="stat-card" style="max-width: 700px;">
-            <h3 style="color: #fff; margin-bottom: 0.5rem; font-size: 1.2rem;">💬 Team WhatsApp Announcements</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
-              Broadcast notices, project launches, or site visit reminders to all field agents or a specific director's team.
-            </p>
-            <div class="form-group">
-              <label class="form-label">Select Target Team</label>
-              <select id="waTeamSelect" class="form-select">
-                <option value="all">All Agents (Company-Wide)</option>
-              </select>
+          <div class="stat-card" style="max-width: 780px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+              <div>
+                <h3 style="color: #fff; margin-bottom: 0.25rem; font-size: 1.3rem;">💬 WhatsApp Broadcast & Customer Hub</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">
+                  Broadcast updates to field agents, share to team WhatsApp groups, or message customer leads instantly.
+                </p>
+              </div>
+              <span id="waApiStatusBadge" class="badge" style="background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3);">
+                Checking Cloud API...
+              </span>
             </div>
+
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Select Target Audience</label>
+                <select id="waTeamSelect" class="form-select">
+                  <optgroup label="Field Teams & Agents" id="waTeamOptgroupAgents">
+                    <option value="all">All Agents (Company-Wide)</option>
+                  </optgroup>
+                  <optgroup label="Customer Inquiries" id="waTeamOptgroupCustomers">
+                    <option value="customers_all">All Customer Leads</option>
+                    <option value="customers_pending">Pending Site Visit Leads</option>
+                    <option value="customers_completed">Completed Site Visit Leads</option>
+                    <option value="customers_positive">Positive & High Intent Leads</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Load Quick Message Template</label>
+                <select id="waTemplateSelect" class="form-select" onchange="applyWaTemplate(this.value)">
+                  <option value="">-- Choose a Preset Template --</option>
+                  <option value="launch">🌟 New Layout Launch Announcement</option>
+                  <option value="site_visit">🚗 Sunday Free Site Visit Pickup</option>
+                  <option value="offer">💰 Inaugural Discount & Limited Plots</option>
+                  <option value="commission">📢 Monthly Agent Commission Update</option>
+                </select>
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label">Message Content</label>
-              <textarea id="waMessageInput" class="form-textarea" rows="4" placeholder="Hello Team, urgent layout update regarding Alakananda Highway City site visits this Sunday..."></textarea>
+              <textarea id="waMessageInput" class="form-textarea" rows="4" placeholder="Type your WhatsApp announcement message here..."></textarea>
             </div>
-            <button class="btn btn-gold" onclick="prepareWhatsAppBroadcast()">Generate Direct Dispatch Links</button>
 
-            <div id="waDispatchContainer" style="margin-top: 1.5rem; display: none;">
-              <h4 style="color: var(--gold); font-size: 0.9rem; margin-bottom: 0.5rem;">Ready to Dispatch (<span id="waRecipientCount">0</span> Agents):</h4>
-              <div id="waLinksList" style="max-height: 250px; overflow-y: auto; background: var(--navy-deep); padding: 0.75rem; border-radius: 4px;"></div>
+            <!-- Action Buttons Row -->
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+              <button class="btn" onclick="shareToWhatsAppGroup()" style="background: #25D366; color: #fff; border: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; padding: 0.65rem 1.25rem;">
+                🚀 1-Click Share to WhatsApp Group
+              </button>
+              <button class="btn btn-gold" onclick="prepareWhatsAppBroadcast()">
+                📋 Generate Direct Dispatch Links
+              </button>
+              <button id="waCloudBroadcastBtn" class="btn btn-outline" onclick="sendAutomatedCloudBroadcast()" style="display: none; border-color: #38bdf8; color: #38bdf8;">
+                ⚡ Send Automated Meta Cloud Broadcast
+              </button>
             </div>
+
+            <!-- Dispatch Container -->
+            <div id="waDispatchContainer" style="margin-top: 1.5rem; display: none; background: rgba(5, 13, 26, 0.6); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h4 style="color: var(--gold); font-size: 0.95rem;">Ready to Dispatch (<span id="waRecipientCount">0</span> Contacts):</h4>
+                <button class="btn btn-outline btn-sm" onclick="startSequentialDispatch()">⚡ Turbo Auto-Next</button>
+              </div>
+              <div id="waLinksList" style="max-height: 280px; overflow-y: auto; background: var(--navy-deep); padding: 0.75rem; border-radius: 4px;"></div>
+            </div>
+
+            <!-- Cloud API Settings Accordion -->
+            <div style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleWaSettingsBox()">
+                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">
+                  ⚙️ Meta WhatsApp Cloud API Credentials (Optional)
+                </span>
+                <span id="waSettingsChevron" style="color: var(--gold); font-size: 0.8rem;">▼ Click to expand</span>
+              </div>
+              <div id="waSettingsBox" style="display: none; margin-top: 1rem; background: var(--navy-deep); padding: 1.25rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">
+                  Paste your Meta WhatsApp Cloud API credentials to enable 100% automated background broadcasting directly from the server.
+                </p>
+                <div class="form-group">
+                  <label class="form-label">Phone Number ID</label>
+                  <input type="text" id="waConfigPhoneId" class="form-input" placeholder="e.g. 104829102938472">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Permanent / System User Access Token</label>
+                  <input type="password" id="waConfigToken" class="form-input" placeholder="e.g. EAAG...">
+                </div>
+                <button class="btn btn-gold btn-sm" onclick="saveWhatsAppCloudConfig()">💾 Save Meta Credentials</button>
+              </div>
+            </div>
+
           </div>
         </section>
 
@@ -1764,14 +1835,56 @@
 
   <!-- ==================== JAVASCRIPT LOGIC ==================== -->
   <script>
-    const API_BASE = (
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.protocol === "file:" ||
-      !window.location.hostname
-    )
-      ? "http://localhost:8000/api"
-      : window.location.origin + "/api";
+    // ========================================================
+    // BULLETPROOF UNIVERSAL CLOUD & LOCAL API RESOLVER
+    // Guarantees admin portal works everywhere:
+    // www.arkinfravizag.com, mobile browsers, Vercel, localhost, file://
+    // ========================================================
+    const CLOUD_API_BASE = "https://arkinfravizagadminportal.vercel.app/api";
+    let API_BASE = CLOUD_API_BASE;
+
+    const isLocalDevHost = (
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
+      window.location.port !== "" &&
+      window.location.protocol.startsWith("http")
+    );
+
+    if (isLocalDevHost) {
+      API_BASE = "http://localhost:8000/api";
+    } else if (window.location.hostname.includes("vercel.app")) {
+      API_BASE = window.location.origin + "/api";
+    } else {
+      API_BASE = CLOUD_API_BASE;
+    }
+
+    // High-reliability fetch engine with automatic localhost-to-cloud failover & cold-start auto-retry
+    async function safeFetchWithFailover(endpoint, options = {}, retries = 2) {
+      const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok && response.status === 404 && API_BASE !== CLOUD_API_BASE) {
+          console.warn("Local API 404, auto-switching to live Cloud API:", CLOUD_API_BASE);
+          API_BASE = CLOUD_API_BASE;
+          const cloudUrl = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
+          return await fetch(cloudUrl, options);
+        }
+        return response;
+      } catch (err) {
+        if (API_BASE !== CLOUD_API_BASE) {
+          console.warn("Local API offline, auto-switching to live Cloud API:", CLOUD_API_BASE);
+          API_BASE = CLOUD_API_BASE;
+          const cloudUrl = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
+          return await fetch(cloudUrl, options);
+        }
+        if (retries > 0) {
+          console.log(`Cloud server waking up, retrying request to ${endpoint}...`);
+          await new Promise(r => setTimeout(r, 1200));
+          return await safeFetchWithFailover(endpoint, options, retries - 1);
+        }
+        throw err;
+      }
+    }
+
     // --- Custom Luxury ARK Alert & Confirm Dialogs (Replaces native browser popups) ---
     function showArkAlert(title, message, iconType = "warning") {
       document.getElementById("arkAlertTitle").textContent = title;
@@ -1838,7 +1951,7 @@
         headers["Content-Type"] = "application/json";
       }
 
-      const response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+      const response = await safeFetchWithFailover(endpoint, { ...options, headers });
       if (response.status === 401) {
         clearToken();
         showLoginOverlay();
@@ -1923,7 +2036,7 @@
       btn.disabled = true;
 
       try {
-        const res = await fetch(`${API_BASE}/admin/login`, {
+        const res = await safeFetchWithFailover("/admin/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -2304,8 +2417,8 @@
           if (advEl) advEl.textContent = stats.total_applications || 0;
         }
 
-        const annRes = await fetch(`${API_BASE}/public/announcements/active`);
-        if (annRes.ok) {
+        const annRes = await safeFetchWithFailover("/public/announcements/active").catch(() => null);
+        if (annRes && annRes.ok) {
           const ann = await annRes.json();
           document.getElementById("activeAnnMessage").textContent = ann ? `"${ann.message}"` : "No active banner running on homepage.";
         }
@@ -4340,7 +4453,7 @@ const DEFAULT_PROJECTS = [
       try {
         let res = await apiRequest("/admin/directors").catch(() => null);
         if (!res || !res.ok) {
-          res = await fetch(`${API_BASE}/public/directors`).catch(() => null);
+          res = await safeFetchWithFailover("/public/directors").catch(() => null);
         }
         if (res && res.ok) {
           const data = await res.json().catch(() => []);
@@ -4361,7 +4474,7 @@ const DEFAULT_PROJECTS = [
       try {
         let res = await apiRequest("/admin/agents").catch(() => null);
         if (!res || !res.ok) {
-          res = await fetch(`${API_BASE}/public/agents`).catch(() => null);
+          res = await safeFetchWithFailover("/public/agents").catch(() => null);
         }
         if (res && res.ok) {
           const data = await res.json().catch(() => []);
@@ -4382,7 +4495,7 @@ const DEFAULT_PROJECTS = [
       try {
         let res = await apiRequest("/admin/projects").catch(() => null);
         if (!res || !res.ok) {
-          res = await fetch(`${API_BASE}/public/projects`).catch(() => null);
+          res = await safeFetchWithFailover("/public/projects").catch(() => null);
         }
         if (res && res.ok) {
           const data = await res.json().catch(() => []);
@@ -4928,12 +5041,20 @@ const DEFAULT_PROJECTS = [
               referralHtml = `<span style="font-size:0.75rem; color:var(--text-muted);">Direct Walk-in</span>`;
             }
 
+            const cleanCustPhone = (c.phone || "").replace(/[^0-9]/g, "");
+            const waCustNumber = cleanCustPhone.length === 10 ? ("91" + cleanCustPhone) : cleanCustPhone;
+            const custProj = c.project_interested ? ` regarding ${c.project_interested}` : "";
+            const waCustGreeting = encodeURIComponent(`Hello ${c.customer_name || 'Customer'} garu, greetings from ARK Infra Properties! Thank you for your interest${custProj}. Our executive team would like to assist you with layout and site visit details. What date or time works best for you?`);
+            const waCustUrl = waCustNumber ? `https://wa.me/${waCustNumber}?text=${waCustGreeting}` : null;
+            const waCustBtn = waCustUrl ? 
+              `<a href="${waCustUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background:#25D366; color:#fff; border:none; padding:1px 6px; font-size:0.72rem; margin-left:6px; border-radius:3px; text-decoration:none; display:inline-flex; align-items:center; gap:2px;" title="Chat with ${c.customer_name} on WhatsApp">💬 Chat</a>` : '';
+
             const row = document.createElement("tr");
             row.innerHTML = `
               <td><img class="cell-avatar" src="${photoUrl}" style="width:42px;height:42px;object-fit:cover;border-radius:50%;border:1px solid var(--gold);" onerror="this.src='images/logo.webp'"></td>
               <td>
                 <b>${c.customer_name}</b><br/>
-                <span style="color:var(--gold); font-size:0.8rem;">📞 ${c.phone || '-'}</span>
+                <span style="color:var(--gold); font-size:0.8rem;">📞 ${c.phone || '-'}</span>${waCustBtn}
                 ${c.address ? `<br/><span style="color:var(--text-muted); font-size:0.72rem;">📍 ${c.address}</span>` : ''}
               </td>
               <td>
@@ -4956,6 +5077,7 @@ const DEFAULT_PROJECTS = [
               </td>
               <td>
                 <div style="display:flex; flex-direction:column; gap:4px;">
+                  ${waCustUrl ? `<a href="${waCustUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background:#25D366; color:#fff; border:none; padding:3px 7px; font-size:0.73rem; text-decoration:none; text-align:center; font-weight:600; border-radius:3px; display:flex; align-items:center; justify-content:center; gap:4px;" title="Open WhatsApp Chat with ${c.customer_name}">💬 WhatsApp Lead</a>` : ''}
                   <button class="btn btn-gold btn-sm" onclick="openApplicationFromLead('${c.id}')" title="Fill Official Site Application & Advance Booking Form" style="font-size:0.73rem; padding:3px 7px;">📝 Book Site / Form</button>
                   <div style="display:flex; gap:4px;">
                     <button class="btn btn-outline btn-sm" onclick="editCustomer('${c.id}')" style="font-size:0.75rem; padding:2px 6px;">Edit</button>
@@ -5647,7 +5769,7 @@ const DEFAULT_PROJECTS = [
         const headers = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        const res = await fetch(`${API_BASE}/admin/site-applications/${id}/pdf`, { headers });
+        const res = await safeFetchWithFailover(`/admin/site-applications/${id}/pdf`, { headers });
         if (res.ok) {
           const blob = await res.blob();
           const url = window.URL.createObjectURL(blob);
@@ -6229,19 +6351,88 @@ const DEFAULT_PROJECTS = [
       downloadPdfFile(`/admin/reports/customers-pdf?status=${encodeURIComponent(status)}`, `ARK_Infra_Customers_${status}_${Date.now()}.pdf`, btn);
     }
 
-    // --- 8. WhatsApp Broadcast ---
+    // --- 8. WhatsApp Broadcast & Customer Hub ---
+    const WA_TEMPLATES = {
+      launch: `🌟 *EXCITING NEW LAUNCH ALERT — ARK INFRA PROPERTIES*\n\nDear Team / Valued Client,\nWe are thrilled to announce the official launch of our prime venture *Gokulavanam Phase 2*!\n\n📍 *Key Highlights:*\n• 100% VMRDA & RERA Approved Layout\n• 40ft & 33ft Blacktop Roads\n• Underground Drainage & Electricity\n• Grand Arch & 24/7 Security\n• Ready for Immediate Registration\n\n🎯 Special Inaugural Pricing available for the first 10 plots only!\n📞 Contact ARK Infra Management today for site visit & brochure.`,
+      
+      site_visit: `🚗 *FREE SUNDAY SITE VISIT INVITATION — ARK INFRA*\n\nHello,\nJoin us this Sunday for an exclusive guided site visit to our prestigious layouts across Anandapuram, Tagarapuvalasa, and Bheemili corridors.\n\n🕒 *Timing:* 9:30 AM onwards\n📍 *Pickup:* Convenient AC transport provided from major junction points.\n🍱 Complimentary lunch & refreshments arranged.\n\nKindly confirm your seat by replying to this message!`,
+      
+      offer: `💰 *FESTIVAL SPECIAL MEGA DISCOUNT — LIMITED PLOTS*\n\nGreetings from ARK Infra!\nCelebrate this festive season with your dream plot investment:\n\n✨ *Special Offer:* Flat ₹200/- off per sq. yd on spot bookings this week!\n📜 100% Clear Title, Immediate Bank Loan up to 75% available.\n\nDon't miss out on securing high-appreciation property. Reply *YES* to book a site visit today.`,
+      
+      commission: `📢 *MONTHLY AGENT COMMISSION & TARGET ANNOUNCEMENT*\n\nDear Field Executives & Associate Directors,\nCongratulations on our outstanding booking milestones this month!\n\n🏆 Top performing agents will be awarded special gold coin incentives at our upcoming monthly summit.\n💼 Please ensure all pending customer site visits are updated in the ARK Admin Portal by Saturday evening.\n\nLet's achieve 100% layout sell-out together!`
+    };
+
+    function applyWaTemplate(val) {
+      if (!val || !WA_TEMPLATES[val]) return;
+      document.getElementById("waMessageInput").value = WA_TEMPLATES[val];
+      showToast("Template loaded into message editor!");
+    }
+
+    function shareToWhatsAppGroup() {
+      const msg = document.getElementById("waMessageInput").value.trim();
+      if (!msg) {
+        showArkAlert("Message Required", "Please write or select a template announcement before sharing to WhatsApp groups.", "info");
+        return;
+      }
+      const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      window.open(shareUrl, "_blank");
+      showToast("Opened WhatsApp! Select your group or community to broadcast.");
+    }
+
+    let waPreparedRecipients = [];
+    let waSequentialIndex = 0;
+
     async function populateWhatsAppTeams() {
       try {
         const res = await apiRequest("/admin/whatsapp/teams");
         if (res.ok) {
-          const teams = await res.json();
-          const select = document.getElementById("waTeamSelect");
-          select.innerHTML = '<option value="all">All Agents (Company-Wide)</option>';
-          teams.forEach(t => {
-            select.innerHTML += `<option value="${t.director_id}">${t.director_name}'s Team (${t.agent_count} Agents)</option>`;
-          });
+          const data = await res.json();
+          const optAgents = document.getElementById("waTeamOptgroupAgents");
+          const optCust = document.getElementById("waTeamOptgroupCustomers");
+          
+          if (optAgents) {
+            optAgents.innerHTML = '<option value="all">All Agents (Company-Wide - 133 Agents)</option>';
+            (data.teams || []).forEach(t => {
+              optAgents.innerHTML += `<option value="${t.director_id}">${t.director_name}'s Team (${t.agent_count} Agents)</option>`;
+            });
+          }
+
+          if (optCust && data.customer_segments) {
+            const cs = data.customer_segments;
+            optCust.innerHTML = `
+              <option value="customers_all">All Customer Leads (${cs.total_customers || 0} Contacts)</option>
+              <option value="customers_pending">Pending Site Visits (${cs.pending_customers || 0} Leads)</option>
+              <option value="customers_completed">Completed Site Visits (${cs.completed_customers || 0} Leads)</option>
+              <option value="customers_positive">Positive & High Intent Leads</option>
+            `;
+          }
         }
-      } catch (e) { console.error(e); }
+
+        // Check Cloud API status
+        const cfgRes = await apiRequest("/admin/whatsapp/config").catch(() => null);
+        const badge = document.getElementById("waApiStatusBadge");
+        const cloudBtn = document.getElementById("waCloudBroadcastBtn");
+        if (cfgRes && cfgRes.ok) {
+          const cfg = await cfgRes.json();
+          if (cfg.configured) {
+            if (badge) {
+              badge.textContent = "● Meta Cloud API Active";
+              badge.style.background = "rgba(74, 222, 128, 0.15)";
+              badge.style.color = "#4ade80";
+              badge.style.borderColor = "rgba(74, 222, 128, 0.3)";
+            }
+            if (cloudBtn) cloudBtn.style.display = "inline-flex";
+            const phoneInput = document.getElementById("waConfigPhoneId");
+            if (phoneInput && cfg.phone_number_id) phoneInput.value = cfg.phone_number_id;
+          } else {
+            if (badge) {
+              badge.textContent = "Cloud API: Keys Not Set (Using 1-Click Group/Web)";
+              badge.style.background = "rgba(234, 179, 8, 0.15)";
+              badge.style.color = "#facc15";
+            }
+          }
+        }
+      } catch (e) { console.error("Error populating WhatsApp hub:", e); }
     }
 
     async function prepareWhatsAppBroadcast() {
@@ -6256,32 +6447,136 @@ const DEFAULT_PROJECTS = [
       try {
         const res = await apiRequest("/admin/whatsapp/prepare-broadcast", {
           method: "POST",
-          body: JSON.stringify({ director_id: team === "all" ? null : team, message: msg })
+          body: JSON.stringify({ director_id: team, message: msg })
         });
         if (res.ok) {
           const data = await res.json();
+          waPreparedRecipients = data.recipients || [];
+          waSequentialIndex = 0;
           document.getElementById("waRecipientCount").textContent = data.total_recipients;
           const list = document.getElementById("waLinksList");
           list.innerHTML = "";
 
-          data.recipients.forEach(r => {
+          if (waPreparedRecipients.length === 0) {
+            list.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:1rem;">No contacts found for this audience.</div>`;
+          }
+
+          waPreparedRecipients.forEach((r, idx) => {
             const item = document.createElement("div");
-            item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0; border-bottom:1px solid rgba(255,255,255,0.05);";
+            item.id = `waRecipientRow_${idx}`;
+            item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.05);";
+            const typeBadge = r.type === "customer" ? `<span style="background:rgba(56,189,248,0.2);color:#38bdf8;font-size:0.7rem;padding:1px 5px;border-radius:2px;margin-left:4px;">Customer</span>` : `<span style="background:rgba(201,169,98,0.2);color:var(--gold);font-size:0.7rem;padding:1px 5px;border-radius:2px;margin-left:4px;">Agent</span>`;
             item.innerHTML = `
               <div>
-                <b style="color:#fff;">${r.agent_name}</b> <span style="color:var(--text-muted);font-size:0.8rem;">(${r.phone})</span>
+                <b style="color:#fff;">${r.agent_name}</b> ${typeBadge}<br/>
+                <span style="color:var(--text-muted);font-size:0.75rem;">${r.phone || 'No Phone'} ${r.extra ? `• ${r.extra}` : ''}</span>
               </div>
-              <a href="${r.whatsapp_link}" target="_blank" rel="noopener noreferrer" class="btn btn-gold btn-sm" style="text-decoration:none;">
-                Dispatch on WhatsApp &rarr;
+              <a href="${r.whatsapp_link}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background:#25D366; color:#fff; border:none; text-decoration:none; font-weight:600; padding:4px 10px; border-radius:3px;" onclick="markWaDispatched(${idx})">
+                Dispatch 💬 &rarr;
               </a>
             `;
             list.appendChild(item);
           });
 
           document.getElementById("waDispatchContainer").style.display = "block";
-          showToast(`Prepared for ${data.total_recipients} agents.`);
+          showToast(`Prepared for ${data.total_recipients} contacts.`);
         }
       } catch (e) { showToast("Error: " + e.message, true); }
+    }
+
+    function markWaDispatched(idx) {
+      const row = document.getElementById(`waRecipientRow_${idx}`);
+      if (row) {
+        row.style.opacity = "0.4";
+        const btn = row.querySelector("a");
+        if (btn) {
+          btn.textContent = "Dispatched ✓";
+          btn.style.background = "#4ade80";
+        }
+      }
+    }
+
+    function startSequentialDispatch() {
+      if (!waPreparedRecipients || waPreparedRecipients.length === 0) {
+        showToast("Please generate dispatch links first.", true);
+        return;
+      }
+      if (waSequentialIndex >= waPreparedRecipients.length) {
+        showToast("All contacts in queue dispatched!", false);
+        return;
+      }
+      const current = waPreparedRecipients[waSequentialIndex];
+      if (current && current.whatsapp_link) {
+        window.open(current.whatsapp_link, "_blank");
+        markWaDispatched(waSequentialIndex);
+        waSequentialIndex++;
+        showToast(`Dispatched ${waSequentialIndex} of ${waPreparedRecipients.length}. Click 'Turbo Auto-Next' for next!`);
+      }
+    }
+
+    function toggleWaSettingsBox() {
+      const box = document.getElementById("waSettingsBox");
+      const chev = document.getElementById("waSettingsChevron");
+      if (!box) return;
+      if (box.style.display === "none") {
+        box.style.display = "block";
+        if (chev) chev.textContent = "▲ Click to collapse";
+      } else {
+        box.style.display = "none";
+        if (chev) chev.textContent = "▼ Click to expand";
+      }
+    }
+
+    async function saveWhatsAppCloudConfig() {
+      const phoneId = document.getElementById("waConfigPhoneId").value.trim();
+      const token = document.getElementById("waConfigToken").value.trim();
+      if (!phoneId || !token) {
+        showArkAlert("Required Fields", "Please enter both Phone Number ID and Access Token from Meta.", "warning");
+        return;
+      }
+      showToast("Saving Meta WhatsApp credentials...");
+      try {
+        const res = await apiRequest("/admin/whatsapp/config", {
+          method: "POST",
+          body: JSON.stringify({ phone_number_id: phoneId, api_token: token })
+        });
+        if (res.ok) {
+          showToast("✅ Meta WhatsApp credentials saved! Cloud Broadcast is now active!");
+          populateWhatsAppTeams();
+          toggleWaSettingsBox();
+        } else {
+          const err = await res.json();
+          showToast(err.detail || "Failed to save configuration.", true);
+        }
+      } catch (e) { showToast("Error saving credentials: " + e.message, true); }
+    }
+
+    async function sendAutomatedCloudBroadcast() {
+      const team = document.getElementById("waTeamSelect").value;
+      const msg = document.getElementById("waMessageInput").value.trim();
+      if (!msg) {
+        showArkAlert("Message Required", "Please type your announcement before sending.", "info");
+        return;
+      }
+
+      showArkConfirm("Send Automated WhatsApp Broadcast?", "This will send direct WhatsApp messages to all matching contacts via Meta Cloud API in the background. Are you sure you want to proceed?", async () => {
+        showToast("🚀 Sending automated bulk WhatsApp broadcast in background...");
+        try {
+          const res = await apiRequest("/admin/whatsapp/send-cloud-broadcast", {
+            method: "POST",
+            body: JSON.stringify({ director_id: team, message: msg })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            showArkAlert("Broadcast Complete!", `✅ Successfully delivered to ${data.sent} contacts!\n${data.failed > 0 ? `⚠️ ${data.failed} failed.` : ''}`, "warning");
+            showToast(data.message);
+          } else {
+            showToast(data.detail || "Broadcast failed.", true);
+          }
+        } catch (e) {
+          showToast("Cloud broadcast error: " + e.message, true);
+        }
+      });
     }
 
     // --- Drag and Drop File Upload Support ---
