@@ -846,7 +846,7 @@
                 
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                   <input type="text" id="waMemberSearch" placeholder="🔍 Search member..." oninput="filterMembersList(this.value)" class="form-input" style="padding: 5px 12px; font-size: 0.82rem; width: 170px;">
-                  <button class="btn btn-gold btn-sm" onclick="startSequentialDispatch()" style="font-weight: 600;">
+                  <button id="waTurboBtn" class="btn btn-gold btn-sm" onclick="startSequentialDispatch()" style="font-weight: 600;">
                     ⚡ Turbo Auto-Send (Selected)
                   </button>
                   <button class="btn btn-sm" onclick="shareToWhatsAppGroup()" style="background: #25D366; color: #fff; border: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
@@ -6543,6 +6543,31 @@ const DEFAULT_PROJECTS = [
         `;
         list.appendChild(row);
       });
+      updateTurboBtn();
+    }
+
+    function updateTurboBtn() {
+      const btn = document.getElementById("waTurboBtn");
+      if (!btn) return;
+      const selected = waPreparedRecipients.filter(r => r.checked);
+      if (selected.length === 0) {
+        btn.innerHTML = `⚡ Turbo Auto-Send (0 Selected)`;
+        btn.disabled = true;
+        return;
+      }
+      btn.disabled = false;
+      const pending = selected.filter(r => !r.sent);
+      if (pending.length === 0) {
+        btn.innerHTML = `✅ All ${selected.length} Sent! (Reset ↻)`;
+        btn.style.background = "#15803d";
+        btn.style.color = "#fff";
+      } else {
+        const next = pending[0];
+        const firstName = (next.agent_name || "Next").split(" ")[0];
+        btn.innerHTML = `⚡ Send: ${firstName} (${pending.length} left) &rarr;`;
+        btn.style.background = "var(--gold)";
+        btn.style.color = "#000";
+      }
     }
 
     function toggleMemberCheck(idx) {
@@ -6558,6 +6583,7 @@ const DEFAULT_PROJECTS = [
       const selectAllToggle = document.getElementById("waSelectAllToggle");
       if (selectedEl) selectedEl.textContent = selected;
       if (selectAllToggle) selectAllToggle.checked = selected === total && total > 0;
+      updateTurboBtn();
     }
 
     function toggleSelectAllMembers(checked) {
@@ -6570,6 +6596,7 @@ const DEFAULT_PROJECTS = [
       });
       const selectedEl = document.getElementById("waSelectedCount");
       if (selectedEl) selectedEl.textContent = checked ? waPreparedRecipients.length : 0;
+      updateTurboBtn();
     }
 
     function filterMembersList(term) {
@@ -6587,6 +6614,7 @@ const DEFAULT_PROJECTS = [
     }
 
     function markWaDispatched(idx) {
+      if (waPreparedRecipients[idx]) waPreparedRecipients[idx].sent = true;
       const row = document.getElementById(`waMemberRow_${idx}`);
       if (row) {
         const btn = row.querySelector("a");
@@ -6595,28 +6623,46 @@ const DEFAULT_PROJECTS = [
           btn.style.background = "#15803d";
         }
       }
+      updateTurboBtn();
     }
 
     function startSequentialDispatch() {
+      const msg = (document.getElementById("waMessageInput")?.value || "").trim();
+      if (!msg) {
+        showArkAlert("Message Required", "Please type your announcement message or select a preset before sending.", "info");
+        return;
+      }
+
       const selected = waPreparedRecipients.filter(r => r.checked);
       if (selected.length === 0) {
         showArkAlert("No Members Selected", "Please tick at least one member checkbox to send messages.", "info");
         return;
       }
-      
-      const current = selected[waSequentialIndex];
-      if (!current) {
-        waSequentialIndex = 0;
-        showToast("All selected members have been queued! Click again to restart.");
+
+      const pending = selected.filter(r => !r.sent);
+      if (pending.length === 0) {
+        // Reset all sent statuses to allow restarting
+        selected.forEach(r => { r.sent = false; });
+        waPreparedRecipients.forEach((r, idx) => {
+          const btn = document.getElementById(`waDispatchBtn_${idx}`);
+          if (btn) {
+            btn.textContent = "💬 Send";
+            btn.style.background = "#25D366";
+          }
+        });
+        updateTurboBtn();
+        showToast("Queue reset! Click to start sending again.");
         return;
       }
 
-      if (current.whatsapp_link) {
+      const current = pending[0];
+      if (current && current.whatsapp_link) {
         window.open(current.whatsapp_link, "_blank");
+        current.sent = true;
         const origIdx = waPreparedRecipients.findIndex(r => r.phone === current.phone && r.agent_name === current.agent_name);
         if (origIdx >= 0) markWaDispatched(origIdx);
-        waSequentialIndex++;
-        showToast(`Opened WhatsApp for ${current.agent_name} (${waSequentialIndex} of ${selected.length}). Click 'Turbo Auto-Send' for next!`);
+        updateTurboBtn();
+        showToast(`Opened WhatsApp for ${current.agent_name}! Click Turbo again for the next member.`);
       }
     }
 
