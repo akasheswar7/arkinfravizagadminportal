@@ -374,16 +374,18 @@ async def get_gateway_status(current_admin: dict = Depends(get_current_admin)):
             if resp.status_code == 200:
                 data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
                 status_info = data.get("status", {})
-                account_status = status_info.get("account_status") if isinstance(status_info, dict) else str(status_info)
-                is_connected = (account_status == "authenticated")
+                account_info = status_info.get("accountStatus", {}) if isinstance(status_info, dict) else {}
+                account_status = account_info.get("status") if isinstance(account_info, dict) else status_info.get("account_status")
+                substatus = account_info.get("substatus") if isinstance(account_info, dict) else ""
+                is_connected = bool(account_status == "authenticated" or substatus == "connected")
                 qr_code = data.get("qrCode", "")
                 return {
                     "configured": True,
                     "connected": is_connected,
                     "instance_id": instance_id,
-                    "account_status": account_status or "connected",
+                    "account_status": account_status or substatus or "authenticated",
                     "qr_code": qr_code,
-                    "message": "Connected & Ready to Send!" if is_connected else f"Status: {account_status}"
+                    "message": "Connected & Ready to Send!" if is_connected else f"Status: {account_status or substatus}"
                 }
             else:
                 return {
