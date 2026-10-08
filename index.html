@@ -781,40 +781,40 @@
         </section>
 
         <!-- SECTION 8: WHATSAPP BROADCAST -->
+        <!-- SECTION 8: WHATSAPP BROADCAST -->
         <section id="tab-whatsapp" style="display: none;">
-          <div class="stat-card" style="max-width: 780px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+          <div class="stat-card" style="max-width: 880px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
               <div>
-                <h3 style="color: #fff; margin-bottom: 0.25rem; font-size: 1.3rem;">💬 WhatsApp Broadcast & Customer Hub</h3>
+                <h3 style="color: #fff; margin-bottom: 0.25rem; font-size: 1.3rem;">💬 WhatsApp Direct Member Broadcast</h3>
                 <p style="color: var(--text-muted); font-size: 0.85rem;">
-                  Broadcast updates to field agents, share to team WhatsApp groups, or message customer leads instantly.
+                  Broadcast meeting alerts and venture announcements. Tick/untick any member and share via WhatsApp directly!
                 </p>
               </div>
-              <span id="waApiStatusBadge" class="badge" style="background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3);">
-                Checking Cloud API...
+              <span id="waApiStatusBadge" class="badge" style="background: rgba(37, 211, 102, 0.15); color: #25D366; border: 1px solid rgba(37, 211, 102, 0.3);">
+                Direct Dispatch Ready
               </span>
             </div>
 
             <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1rem;">
               <div class="form-group">
-                <label class="form-label">Select Target Audience</label>
-                <select id="waTeamSelect" class="form-select">
-                  <optgroup label="Field Teams & Agents" id="waTeamOptgroupAgents">
-                    <option value="all">All Agents (Company-Wide)</option>
+                <label class="form-label">Select Group / Team</label>
+                <select id="waTeamSelect" class="form-select" onchange="onWaTeamChange()">
+                  <optgroup label="🏢 Company-Wide Leadership & Teams">
+                    <option value="all_members" selected>🌟 All Directors & Agents (Entire Company)</option>
+                    <option value="directors_all">👔 All Directors Only</option>
+                    <option value="agents_all">🤝 All Agents Only</option>
                   </optgroup>
-                  <optgroup label="Customer Inquiries" id="waTeamOptgroupCustomers">
-                    <option value="customers_all">All Customer Leads</option>
-                    <option value="customers_pending">Pending Site Visit Leads</option>
-                    <option value="customers_completed">Completed Site Visit Leads</option>
-                    <option value="customers_positive">Positive & High Intent Leads</option>
-                  </optgroup>
+                  <optgroup label="👥 Director's Teams" id="waTeamOptgroupAgents"></optgroup>
+                  <optgroup label="💼 Customer Inquiries" id="waTeamOptgroupCustomers"></optgroup>
                 </select>
               </div>
 
               <div class="form-group">
-                <label class="form-label">Load Quick Message Template</label>
+                <label class="form-label">Quick Announcement Preset</label>
                 <select id="waTemplateSelect" class="form-select" onchange="applyWaTemplate(this.value)">
-                  <option value="">-- Choose a Preset Template --</option>
+                  <option value="">-- Choose Announcement Preset --</option>
+                  <option value="meeting">📅 Important Team Meeting Tomorrow</option>
                   <option value="launch">🌟 New Layout Launch Announcement</option>
                   <option value="site_visit">🚗 Sunday Free Site Visit Pickup</option>
                   <option value="offer">💰 Inaugural Discount & Limited Plots</option>
@@ -823,44 +823,55 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Message Content</label>
-              <textarea id="waMessageInput" class="form-textarea" rows="4" placeholder="Type your WhatsApp announcement message here..."></textarea>
-            </div>
-
-            <!-- Action Buttons Row -->
-            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
-              <button class="btn" onclick="shareToWhatsAppGroup()" style="background: #25D366; color: #fff; border: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; padding: 0.65rem 1.25rem;">
-                🚀 1-Click Share to WhatsApp Group
-              </button>
-              <button class="btn btn-gold" onclick="prepareWhatsAppBroadcast()">
-                📋 Generate Direct Dispatch Links
-              </button>
-              <button id="waCloudBroadcastBtn" class="btn btn-outline" onclick="sendAutomatedCloudBroadcast()" style="display: none; border-color: #38bdf8; color: #38bdf8;">
-                ⚡ Meta Cloud API (Sandbox Test)
-              </button>
-            </div>
-
-            <!-- Dispatch Container -->
-            <div id="waDispatchContainer" style="margin-top: 1.5rem; display: none; background: rgba(5, 13, 26, 0.6); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                <h4 style="color: var(--gold); font-size: 0.95rem;">Ready to Dispatch (<span id="waRecipientCount">0</span> Contacts):</h4>
-                <button class="btn btn-outline btn-sm" onclick="startSequentialDispatch()">⚡ Turbo Auto-Next</button>
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label class="form-label" style="margin-bottom: 0;">Announcement Message Content</label>
+                <span id="waCharCount" style="color: var(--text-muted); font-size: 0.75rem;">0 characters</span>
               </div>
-              <div id="waLinksList" style="max-height: 280px; overflow-y: auto; background: var(--navy-deep); padding: 0.75rem; border-radius: 4px;"></div>
+              <textarea id="waMessageInput" class="form-textarea" rows="4" placeholder="Type your WhatsApp announcement message here (e.g. Important Meeting tomorrow at 10:30 AM at ARK Infra office)..." oninput="onWaMessageInputChange()"></textarea>
+            </div>
+
+            <!-- Members Checklist Box (ALWAYS VISIBLE) -->
+            <div id="waDispatchContainer" style="background: rgba(5, 13, 26, 0.7); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.85rem;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: #fff; font-weight: 600; font-size: 0.95rem; user-select: none;">
+                    <input type="checkbox" id="waSelectAllToggle" checked onchange="toggleSelectAllMembers(this.checked)" style="width: 17px; height: 17px; accent-color: var(--gold); cursor: pointer;">
+                    Select All
+                  </label>
+                  <span class="badge" style="background: rgba(201, 169, 98, 0.15); color: var(--gold); border: 1px solid rgba(201, 169, 98, 0.3);">
+                    Selected: <b id="waSelectedCount" style="margin: 0 3px;">0</b> / <span id="waRecipientCount">0</span>
+                  </span>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <input type="text" id="waMemberSearch" placeholder="🔍 Search member..." oninput="filterMembersList(this.value)" class="form-input" style="padding: 5px 12px; font-size: 0.82rem; width: 170px;">
+                  <button class="btn btn-gold btn-sm" onclick="startSequentialDispatch()" style="font-weight: 600;">
+                    ⚡ Turbo Auto-Send (Selected)
+                  </button>
+                  <button class="btn btn-sm" onclick="shareToWhatsAppGroup()" style="background: #25D366; color: #fff; border: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                    🚀 Share to Group
+                  </button>
+                </div>
+              </div>
+
+              <!-- List of Members with Checkboxes -->
+              <div id="waLinksList" style="max-height: 400px; overflow-y: auto; background: var(--navy-deep); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading members...</div>
+              </div>
             </div>
 
             <!-- Cloud API Settings Accordion -->
             <div style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
               <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleWaSettingsBox()">
-                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">
-                  ⚙️ Meta WhatsApp Cloud API Credentials (Optional)
+                <span style="color: var(--text-muted); font-size: 0.82rem;">
+                  ⚙️ Advanced Meta WhatsApp Cloud API Settings (Optional)
                 </span>
                 <span id="waSettingsChevron" style="color: var(--gold); font-size: 0.8rem;">▼ Click to expand</span>
               </div>
               <div id="waSettingsBox" style="display: none; margin-top: 1rem; background: var(--navy-deep); padding: 1.25rem; border-radius: 6px; border: 1px solid var(--border-color);">
                 <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">
-                  Paste your Meta WhatsApp Cloud API credentials to enable 100% automated background broadcasting directly from the server.
+                  Paste your Meta WhatsApp Cloud API credentials to enable background broadcasting directly from the server.
                 </p>
                 <div class="form-group">
                   <label class="form-label">Phone Number ID</label>
@@ -868,12 +879,12 @@
                 </div>
                 <div class="form-group">
                   <label class="form-label">Permanent / System User Access Token</label>
-                  <input type="password" id="waConfigToken" class="form-input" placeholder="e.g. EAAG...">
+                  <input type="password" id="waConfigToken" class="form-input" placeholder="Paste your Meta System User Access Token (EAA...)">
                 </div>
-                <button class="btn btn-gold btn-sm" onclick="saveWhatsAppCloudConfig()">💾 Save Meta Credentials</button>
-              </div>
-            </div>
-
+                <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                  <button class="btn btn-gold btn-sm" onclick="saveWhatsAppCloudConfig()">💾 Save Meta Credentials</button>
+                  <button id="waCloudBroadcastBtn" class="btn btn-outline btn-sm" onclick="sendAutomatedCloudBroadcast()" style="border-color: #38bdf8; color: #38bdf8;">⚡ Test Meta API</button>
+                </div>
           </div>
         </section>
 
@@ -6351,9 +6362,11 @@ const DEFAULT_PROJECTS = [
       downloadPdfFile(`/admin/reports/customers-pdf?status=${encodeURIComponent(status)}`, `ARK_Infra_Customers_${status}_${Date.now()}.pdf`, btn);
     }
 
-    // --- 8. WhatsApp Broadcast & Customer Hub ---
+    // --- 8. WhatsApp Direct Member Broadcast with Interactive Checkboxes & Direct Share ---
     const WA_TEMPLATES = {
-      launch: `🌟 *EXCITING NEW LAUNCH ALERT — ARK INFRA PROPERTIES*\n\nDear Team / Valued Client,\nWe are thrilled to announce the official launch of our prime venture *Gokulavanam Phase 2*!\n\n📍 *Key Highlights:*\n• 100% VMRDA & RERA Approved Layout\n• 40ft & 33ft Blacktop Roads\n• Underground Drainage & Electricity\n• Grand Arch & 24/7 Security\n• Ready for Immediate Registration\n\n🎯 Special Inaugural Pricing available for the first 10 plots only!\n📞 Contact ARK Infra Management today for site visit & brochure.`,
+      meeting: `📢 *IMPORTANT NOTICE — ARK INFRA MEETING*\n\nDear Team Member,\nThis is to inform all Directors and Agents that an important strategic review meeting is scheduled for tomorrow.\n\n📍 *Venue:* ARK Infra Head Office, Visakhapatnam\n⏰ *Time:* 10:30 AM Sharp\n📋 *Agenda:* Venture Launch, Plot Allocation & Site Visit Progress\n\nYour presence is mandatory. Please be on time.\n\n— *Management, ARK Infra*`,
+
+      launch: `🌟 *EXCLUSIVE VENTURE LAUNCH ANNOUNCEMENT — ARK INFRA*\n\nGreetings from ARK Infra!\nWe are delighted to announce our grand new plotted venture located at prime growth corridors with exceptional connectivity.\n\n📍 *Location Highlights:* 10 Mins from National Highway & Fast-Track Expressways\n📐 *Plot Sizes:* 167, 200, 300 & 500 Sq. Yards available\n✅ 100% VMRDA / Approved Layout with 40ft Blacktop Roads\n\nContact our sales desk or visit https://arkinfravizag.com for spot booking offers!`,
       
       site_visit: `🚗 *FREE SUNDAY SITE VISIT INVITATION — ARK INFRA*\n\nHello,\nJoin us this Sunday for an exclusive guided site visit to our prestigious layouts across Anandapuram, Tagarapuvalasa, and Bheemili corridors.\n\n🕒 *Timing:* 9:30 AM onwards\n📍 *Pickup:* Convenient AC transport provided from major junction points.\n🍱 Complimentary lunch & refreshments arranged.\n\nKindly confirm your seat by replying to this message!`,
       
@@ -6362,14 +6375,35 @@ const DEFAULT_PROJECTS = [
       commission: `📢 *MONTHLY AGENT COMMISSION & TARGET ANNOUNCEMENT*\n\nDear Field Executives & Associate Directors,\nCongratulations on our outstanding booking milestones this month!\n\n🏆 Top performing agents will be awarded special gold coin incentives at our upcoming monthly summit.\n💼 Please ensure all pending customer site visits are updated in the ARK Admin Portal by Saturday evening.\n\nLet's achieve 100% layout sell-out together!`
     };
 
+    let waPreparedRecipients = [];
+    let waSequentialIndex = 0;
+
     function applyWaTemplate(val) {
       if (!val || !WA_TEMPLATES[val]) return;
-      document.getElementById("waMessageInput").value = WA_TEMPLATES[val];
+      const input = document.getElementById("waMessageInput");
+      input.value = WA_TEMPLATES[val];
+      onWaMessageInputChange();
       showToast("Template loaded into message editor!");
     }
 
+    function onWaMessageInputChange() {
+      const msg = (document.getElementById("waMessageInput")?.value || "").trim();
+      const countEl = document.getElementById("waCharCount");
+      if (countEl) countEl.textContent = `${msg.length} characters`;
+
+      // Update all dispatch links in real-time
+      const encodedMsg = encodeURIComponent(msg || "ARK Infra Announcement");
+      waPreparedRecipients.forEach((r, idx) => {
+        r.whatsapp_link = r.clean_phone ? `https://wa.me/${r.clean_phone}?text=${encodedMsg}` : null;
+        const linkBtn = document.getElementById(`waDispatchBtn_${idx}`);
+        if (linkBtn && r.whatsapp_link) {
+          linkBtn.href = r.whatsapp_link;
+        }
+      });
+    }
+
     function shareToWhatsAppGroup() {
-      const msg = document.getElementById("waMessageInput").value.trim();
+      const msg = (document.getElementById("waMessageInput")?.value || "").trim();
       if (!msg) {
         showArkAlert("Message Required", "Please write or select a template announcement before sharing to WhatsApp groups.", "info");
         return;
@@ -6378,9 +6412,6 @@ const DEFAULT_PROJECTS = [
       window.open(shareUrl, "_blank");
       showToast("Opened WhatsApp! Select your group or community to broadcast.");
     }
-
-    let waPreparedRecipients = [];
-    let waSequentialIndex = 0;
 
     async function populateWhatsAppTeams() {
       try {
@@ -6391,7 +6422,7 @@ const DEFAULT_PROJECTS = [
           const optCust = document.getElementById("waTeamOptgroupCustomers");
           
           if (optAgents) {
-            optAgents.innerHTML = '<option value="all">All Agents (Company-Wide - 133 Agents)</option>';
+            optAgents.innerHTML = "";
             (data.teams || []).forEach(t => {
               optAgents.innerHTML += `<option value="${t.director_id}">${t.director_name}'s Team (${t.agent_count} Agents)</option>`;
             });
@@ -6406,44 +6437,36 @@ const DEFAULT_PROJECTS = [
               <option value="customers_positive">Positive & High Intent Leads</option>
             `;
           }
+
+          // Initial auto-load of members checklist
+          await onWaTeamChange();
         }
 
         // Check Cloud API status
         const cfgRes = await apiRequest("/admin/whatsapp/config").catch(() => null);
         const badge = document.getElementById("waApiStatusBadge");
-        const cloudBtn = document.getElementById("waCloudBroadcastBtn");
+        const phoneInput = document.getElementById("waConfigPhoneId");
         if (cfgRes && cfgRes.ok) {
           const cfg = await cfgRes.json();
           if (cfg.configured) {
             if (badge) {
-              badge.textContent = "● Meta Cloud API Active";
+              badge.textContent = "● Meta Cloud API Linked";
               badge.style.background = "rgba(74, 222, 128, 0.15)";
               badge.style.color = "#4ade80";
               badge.style.borderColor = "rgba(74, 222, 128, 0.3)";
             }
-            if (cloudBtn) cloudBtn.style.display = "inline-flex";
-            const phoneInput = document.getElementById("waConfigPhoneId");
             if (phoneInput && cfg.phone_number_id) phoneInput.value = cfg.phone_number_id;
-          } else {
-            if (badge) {
-              badge.textContent = "Cloud API: Keys Not Set (Using 1-Click Group/Web)";
-              badge.style.background = "rgba(234, 179, 8, 0.15)";
-              badge.style.color = "#facc15";
-            }
           }
         }
       } catch (e) { console.error("Error populating WhatsApp hub:", e); }
     }
 
-    async function prepareWhatsAppBroadcast() {
-      const team = document.getElementById("waTeamSelect").value;
-      const msg = document.getElementById("waMessageInput").value.trim();
-      if (!msg) {
-        showArkAlert("Message Required", "Please write the announcement text before generating WhatsApp dispatch links.", "info");
-        return;
-      }
+    async function onWaTeamChange() {
+      const team = document.getElementById("waTeamSelect")?.value || "all_members";
+      const msg = document.getElementById("waMessageInput")?.value?.trim() || "ARK Infra Announcement";
+      const list = document.getElementById("waLinksList");
+      if (list) list.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:1.5rem;">Loading member contacts...</div>`;
 
-      showToast("Preparing WhatsApp dispatch links...");
       try {
         const res = await apiRequest("/admin/whatsapp/prepare-broadcast", {
           method: "POST",
@@ -6451,66 +6474,149 @@ const DEFAULT_PROJECTS = [
         });
         if (res.ok) {
           const data = await res.json();
-          waPreparedRecipients = data.recipients || [];
+          waPreparedRecipients = (data.recipients || []).map(r => ({
+            ...r,
+            checked: true
+          }));
           waSequentialIndex = 0;
-          document.getElementById("waRecipientCount").textContent = data.total_recipients;
-          const list = document.getElementById("waLinksList");
-          list.innerHTML = "";
-
-          if (waPreparedRecipients.length === 0) {
-            list.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:1rem;">No contacts found for this audience.</div>`;
-          }
-
-          waPreparedRecipients.forEach((r, idx) => {
-            const item = document.createElement("div");
-            item.id = `waRecipientRow_${idx}`;
-            item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.05);";
-            const typeBadge = r.type === "customer" ? `<span style="background:rgba(56,189,248,0.2);color:#38bdf8;font-size:0.7rem;padding:1px 5px;border-radius:2px;margin-left:4px;">Customer</span>` : `<span style="background:rgba(201,169,98,0.2);color:var(--gold);font-size:0.7rem;padding:1px 5px;border-radius:2px;margin-left:4px;">Agent</span>`;
-            item.innerHTML = `
-              <div>
-                <b style="color:#fff;">${r.agent_name}</b> ${typeBadge}<br/>
-                <span style="color:var(--text-muted);font-size:0.75rem;">${r.phone || 'No Phone'} ${r.extra ? `• ${r.extra}` : ''}</span>
-              </div>
-              <a href="${r.whatsapp_link}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background:#25D366; color:#fff; border:none; text-decoration:none; font-weight:600; padding:4px 10px; border-radius:3px;" onclick="markWaDispatched(${idx})">
-                Dispatch 💬 &rarr;
-              </a>
-            `;
-            list.appendChild(item);
-          });
-
-          document.getElementById("waDispatchContainer").style.display = "block";
-          showToast(`Prepared for ${data.total_recipients} contacts.`);
+          renderMembersChecklist();
         }
-      } catch (e) { showToast("Error: " + e.message, true); }
+      } catch (e) {
+        if (list) list.innerHTML = `<div style="text-align:center; color:#f87171; padding:1.5rem;">Error loading members: ${e.message}</div>`;
+      }
+    }
+
+    function renderMembersChecklist() {
+      const list = document.getElementById("waLinksList");
+      const totalEl = document.getElementById("waRecipientCount");
+      const selectedEl = document.getElementById("waSelectedCount");
+      const selectAllToggle = document.getElementById("waSelectAllToggle");
+      if (!list) return;
+
+      list.innerHTML = "";
+      const total = waPreparedRecipients.length;
+      const selected = waPreparedRecipients.filter(r => r.checked).length;
+      if (totalEl) totalEl.textContent = total;
+      if (selectedEl) selectedEl.textContent = selected;
+      if (selectAllToggle) selectAllToggle.checked = selected === total && total > 0;
+
+      if (total === 0) {
+        list.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:1.5rem;">No contacts found in this group.</div>`;
+        return;
+      }
+
+      waPreparedRecipients.forEach((r, idx) => {
+        const row = document.createElement("div");
+        row.id = `waMemberRow_${idx}`;
+        row.className = "wa-member-row";
+        row.setAttribute("data-name", (r.agent_name || "").toLowerCase());
+        row.setAttribute("data-phone", (r.phone || "").toLowerCase());
+        row.style.cssText = `display:flex; justify-content:space-between; align-items:center; padding:0.65rem 0.75rem; border-bottom:1px solid rgba(255,255,255,0.05); transition:opacity 0.2s; opacity:${r.checked ? '1' : '0.45'};`;
+
+        let typeBadge = "";
+        if (r.type === "director") {
+          typeBadge = `<span style="background:rgba(201,169,98,0.25);color:var(--gold);font-size:0.7rem;padding:2px 7px;border-radius:3px;margin-left:6px;font-weight:600;">Director</span>`;
+        } else if (r.type === "agent") {
+          typeBadge = `<span style="background:rgba(74,222,128,0.2);color:#4ade80;font-size:0.7rem;padding:2px 7px;border-radius:3px;margin-left:6px;font-weight:600;">Agent</span>`;
+        } else {
+          typeBadge = `<span style="background:rgba(56,189,248,0.2);color:#38bdf8;font-size:0.7rem;padding:2px 7px;border-radius:3px;margin-left:6px;font-weight:600;">Customer</span>`;
+        }
+
+        row.innerHTML = `
+          <div style="display:flex; align-items:center; gap:12px;">
+            <input type="checkbox" id="waCheck_${idx}" ${r.checked ? 'checked' : ''} onchange="toggleMemberCheck(${idx})" style="width:16px; height:16px; accent-color:var(--gold); cursor:pointer;">
+            <div>
+              <div style="display:flex; align-items:center;">
+                <b style="color:#fff; font-size:0.92rem;">${r.agent_name}</b>
+                ${typeBadge}
+              </div>
+              <span style="color:var(--text-muted); font-size:0.78rem;">
+                ${r.phone || 'No phone'} ${r.extra ? `• ${r.extra}` : ''}
+              </span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <a id="waDispatchBtn_${idx}" href="${r.whatsapp_link || '#'}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background:#25D366; color:#fff; border:none; text-decoration:none; font-weight:600; padding:5px 12px; border-radius:4px; display:inline-flex; align-items:center; gap:4px; font-size:0.8rem;" onclick="markWaDispatched(${idx})">
+              💬 Send
+            </a>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function toggleMemberCheck(idx) {
+      if (!waPreparedRecipients[idx]) return;
+      waPreparedRecipients[idx].checked = !waPreparedRecipients[idx].checked;
+      const isChecked = waPreparedRecipients[idx].checked;
+      const row = document.getElementById(`waMemberRow_${idx}`);
+      if (row) row.style.opacity = isChecked ? "1" : "0.45";
+
+      const total = waPreparedRecipients.length;
+      const selected = waPreparedRecipients.filter(r => r.checked).length;
+      const selectedEl = document.getElementById("waSelectedCount");
+      const selectAllToggle = document.getElementById("waSelectAllToggle");
+      if (selectedEl) selectedEl.textContent = selected;
+      if (selectAllToggle) selectAllToggle.checked = selected === total && total > 0;
+    }
+
+    function toggleSelectAllMembers(checked) {
+      waPreparedRecipients.forEach((r, idx) => {
+        r.checked = checked;
+        const checkEl = document.getElementById(`waCheck_${idx}`);
+        const row = document.getElementById(`waMemberRow_${idx}`);
+        if (checkEl) checkEl.checked = checked;
+        if (row) row.style.opacity = checked ? "1" : "0.45";
+      });
+      const selectedEl = document.getElementById("waSelectedCount");
+      if (selectedEl) selectedEl.textContent = checked ? waPreparedRecipients.length : 0;
+    }
+
+    function filterMembersList(term) {
+      const q = (term || "").toLowerCase().trim();
+      const rows = document.querySelectorAll(".wa-member-row");
+      rows.forEach(row => {
+        const name = row.getAttribute("data-name") || "";
+        const phone = row.getAttribute("data-phone") || "";
+        if (!q || name.includes(q) || phone.includes(q)) {
+          row.style.display = "flex";
+        } else {
+          row.style.display = "none";
+        }
+      });
     }
 
     function markWaDispatched(idx) {
-      const row = document.getElementById(`waRecipientRow_${idx}`);
+      const row = document.getElementById(`waMemberRow_${idx}`);
       if (row) {
-        row.style.opacity = "0.4";
         const btn = row.querySelector("a");
         if (btn) {
-          btn.textContent = "Dispatched ✓";
-          btn.style.background = "#4ade80";
+          btn.textContent = "Sent ✓";
+          btn.style.background = "#15803d";
         }
       }
     }
 
     function startSequentialDispatch() {
-      if (!waPreparedRecipients || waPreparedRecipients.length === 0) {
-        showToast("Please generate dispatch links first.", true);
+      const selected = waPreparedRecipients.filter(r => r.checked);
+      if (selected.length === 0) {
+        showArkAlert("No Members Selected", "Please tick at least one member checkbox to send messages.", "info");
         return;
       }
-      if (waSequentialIndex >= waPreparedRecipients.length) {
-        showToast("All contacts in queue dispatched!", false);
+      
+      const current = selected[waSequentialIndex];
+      if (!current) {
+        waSequentialIndex = 0;
+        showToast("All selected members have been queued! Click again to restart.");
         return;
       }
-      const current = waPreparedRecipients[waSequentialIndex];
-      if (current && current.whatsapp_link) {
+
+      if (current.whatsapp_link) {
         window.open(current.whatsapp_link, "_blank");
-        markWaDispatched(waSequentialIndex);
+        const origIdx = waPreparedRecipients.findIndex(r => r.phone === current.phone && r.agent_name === current.agent_name);
+        if (origIdx >= 0) markWaDispatched(origIdx);
         waSequentialIndex++;
-        showToast(`Dispatched ${waSequentialIndex} of ${waPreparedRecipients.length}. Click 'Turbo Auto-Next' for next!`);
+        showToast(`Opened WhatsApp for ${current.agent_name} (${waSequentialIndex} of ${selected.length}). Click 'Turbo Auto-Send' for next!`);
       }
     }
 

@@ -57,7 +57,7 @@ async def save_whatsapp_config(payload: WhatsAppConfigUpdate, current_admin: dic
 
 @router.get("/teams")
 async def get_whatsapp_teams(current_admin: dict = Depends(get_current_admin)):
-    """Returns available directors and customer segments for WhatsApp dispatch."""
+    """Returns available directors, teams, and customer segments for WhatsApp dispatch."""
     directors_col = get_collection("directors")
     agents_col = get_collection("agents")
     customers_col = get_collection("customers")
@@ -73,13 +73,20 @@ async def get_whatsapp_teams(current_admin: dict = Depends(get_current_admin)):
             "agent_count": count
         })
 
-    # Counts for customer segments
+    total_directors = len(directors)
+    total_agents = await agents_col.count_documents({})
     total_customers = await customers_col.count_documents({})
     pending_customers = await customers_col.count_documents({"site_visit_status": "Pending"})
     completed_customers = await customers_col.count_documents({"site_visit_status": "Site Visit Completed"})
 
     return {
         "teams": teams,
+        "counts": {
+            "total_directors": total_directors,
+            "total_agents": total_agents,
+            "total_members": total_directors + total_agents,
+            "total_customers": total_customers
+        },
         "customer_segments": {
             "total_customers": total_customers,
             "pending_customers": pending_customers,
@@ -88,7 +95,7 @@ async def get_whatsapp_teams(current_admin: dict = Depends(get_current_admin)):
     }
 
 async def _fetch_recipients(director_id: Optional[str]) -> list:
-    """Helper to fetch recipient contacts based on selector."""
+    """Helper to fetch recipient contacts based on selector (Directors, Agents, Teams, Customers)."""
     recipients = []
     
     if director_id and director_id.startswith("customers_"):
@@ -108,25 +115,110 @@ async def _fetch_recipients(director_id: Optional[str]) -> list:
             if len(clean_phone) == 10:
                 clean_phone = "91" + clean_phone
             recipients.append({
+                "id": str(c.get("_id")),
                 "name": c.get("customer_name") or "Customer",
                 "phone": c.get("phone") or "",
                 "clean_phone": clean_phone,
                 "type": "customer",
-                "extra": c.get("project_interested") or ""
+                "extra": c.get("project_interested") or "Customer Lead"
             })
-    else:
+    elif director_id == "directors_all":
+        # All Directors Only
+        directors_col = get_collection("directors")
+        directors = await directors_col.find().sort("name", 1).to_list(length=100)
+        for d in directors:
+            raw_phone = (d.get("phone") or "").replace(" ", "").replace("-", "").replace("+", "")
+            clean_phone = raw_phone
+            if len(clean_phone) == 10:
+                clean_phone = "91" + clean_phone
+            recipients.append({
+                "id": str(d.get("_id")),
+                "name": d.get("name") or "Director",
+                "phone": d.get("phone") or "",
+                "clean_phone": clean_phone,
+                "type": "director",
+                "extra": d.get("role") or "Managing Director"
+            })
+    elif director_id in ["all_members", "all_directors_agents"]:
+        # Company-Wide: All Directors + All Agents
+        directors_col = get_collection("directors")
+        directors = await directors_col.find().sort("name", 1).to_list(length=100)
+        for d in directors:
+            raw_phone = (d.get("phone") or "").replace(" ", "").replace("-", "").replace("+", "")
+            clean_phone = raw_phone
+            if len(clean_phone) == 10:
+                clean_phone = "91" + clean_phone
+            recipients.append({
+                "id": str(d.get("_id")),
+                "name": d.get("name") or "Director",
+                "phone": d.get("phone") or "",
+                "clean_phone": clean_phone,
+                "type": "director",
+                "extra": d.get("role") or "Director"
+            })
         agents_col = get_collection("agents")
-        query = {}
-        if director_id and director_id != "all":
-            query["director_id"] = director_id
-            
-        agents = await agents_col.find(query).to_list(length=500)
+        agents = await agents_col.find().sort("full_name", 1).to_list(length=500)
         for a in agents:
             raw_phone = (a.get("phone") or "").replace(" ", "").replace("-", "").replace("+", "")
             clean_phone = raw_phone
             if len(clean_phone) == 10:
                 clean_phone = "91" + clean_phone
             recipients.append({
+                "id": str(a.get("_id")),
+                "name": a.get("full_name") or "Agent",
+                "phone": a.get("phone") or "",
+                "clean_phone": clean_phone,
+                "type": "agent",
+                "extra": a.get("designation") or "Real Estate Agent"
+            })
+    elif director_id in ["agents_all", "all"]:
+        # All Agents Only
+        agents_col = get_collection("agents")
+        agents = await agents_col.find().sort("full_name", 1).to_list(length=500)
+        for a in agents:
+            raw_phone = (a.get("phone") or "").replace(" ", "").replace("-", "").replace("+", "")
+            clean_phone = raw_phone
+            if len(clean_phone) == 10:
+                clean_phone = "91" + clean_phone
+            recipients.append({
+                "id": str(a.get("_id")),
+                "name": a.get("full_name") or "Agent",
+                "phone": a.get("phone") or "",
+                "clean_phone": clean_phone,
+                "type": "agent",
+                "extra": a.get("designation") or "Real Estate Agent"
+            })
+    else:
+        # A specific director's team (Director + their agents)
+        from bson import ObjectId
+        directors_col = get_collection("directors")
+        try:
+            d_obj = await directors_col.find_one({"_id": ObjectId(director_id)})
+            if d_obj:
+                raw_phone = (d_obj.get("phone") or "").replace(" ", "").replace("-", "").replace("+", "")
+                clean_phone = raw_phone
+                if len(clean_phone) == 10:
+                    clean_phone = "91" + clean_phone
+                recipients.append({
+                    "id": str(d_obj.get("_id")),
+                    "name": d_obj.get("name") or "Director",
+                    "phone": d_obj.get("phone") or "",
+                    "clean_phone": clean_phone,
+                    "type": "director",
+                    "extra": f"Head: {d_obj.get('role') or 'Director'}"
+                })
+        except Exception:
+            pass
+
+        agents_col = get_collection("agents")
+        agents = await agents_col.find({"director_id": director_id}).sort("full_name", 1).to_list(length=500)
+        for a in agents:
+            raw_phone = (a.get("phone") or "").replace(" ", "").replace("-", "").replace("+", "")
+            clean_phone = raw_phone
+            if len(clean_phone) == 10:
+                clean_phone = "91" + clean_phone
+            recipients.append({
+                "id": str(a.get("_id")),
                 "name": a.get("full_name") or "Agent",
                 "phone": a.get("phone") or "",
                 "clean_phone": clean_phone,
