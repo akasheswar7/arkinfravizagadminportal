@@ -6571,7 +6571,14 @@ const DEFAULT_PROJECTS = [
             let detailMsg = `✅ Successfully delivered to ${data.sent} contacts!`;
             if (data.failed > 0) {
               detailMsg += `\n⚠️ ${data.failed} failed.`;
-              detailMsg += `\n\n📌 Why did it fail?\nMeta Cloud API requires an approved message template or an active 24-hr chat window to initiate outbound messages.\n\n💡 Tip: Use the green "🚀 Share to WhatsApp Group" or individual "💬 Dispatch" buttons below to send messages instantly to everyone with zero restrictions!`;
+              let errText = (data.sample_errors && data.sample_errors[0]) || "";
+              if (errText.includes("not in allowed list") || errText.includes("131030")) {
+                detailMsg += `\n\n📌 Reason: Phone number is not in Meta's Test Allowed List.\nMeta's free Sandbox number can only auto-send to your verified developer number (+91 63045 61583).\n\n💡 How to send right now: Click the green "💬 Dispatch" button in the table below to send directly via WhatsApp!`;
+              } else if (errText.includes("131047") || errText.includes("Re-engagement")) {
+                detailMsg += `\n\n📌 Reason: Outside 24-hr customer window.\nMeta requires the customer to message first or an approved template.\n\n💡 How to send right now: Click the green "💬 Dispatch" button below!`;
+              } else {
+                detailMsg += `\n\n💡 Tip: Use the green "🚀 Share to WhatsApp Group" or individual "💬 Dispatch" buttons below to send messages instantly to anyone with zero restrictions!`;
+              }
             }
             showArkAlert(data.sent > 0 ? "Broadcast Complete!" : "Broadcast Notice", detailMsg, data.sent > 0 ? "success" : "warning");
             showToast(data.message);
