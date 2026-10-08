@@ -6568,7 +6568,12 @@ const DEFAULT_PROJECTS = [
           });
           const data = await res.json();
           if (res.ok && data.success) {
-            showArkAlert("Broadcast Complete!", `✅ Successfully delivered to ${data.sent} contacts!\n${data.failed > 0 ? `⚠️ ${data.failed} failed.` : ''}`, "warning");
+            let detailMsg = `✅ Successfully delivered to ${data.sent} contacts!`;
+            if (data.failed > 0) {
+              detailMsg += `\n⚠️ ${data.failed} failed.`;
+              detailMsg += `\n\n📌 Why did it fail?\nMeta Cloud API requires an approved message template or an active 24-hr chat window to initiate outbound messages.\n\n💡 Tip: Use the green "🚀 Share to WhatsApp Group" or individual "💬 Dispatch" buttons below to send messages instantly to everyone with zero restrictions!`;
+            }
+            showArkAlert(data.sent > 0 ? "Broadcast Complete!" : "Broadcast Notice", detailMsg, data.sent > 0 ? "success" : "warning");
             showToast(data.message);
           } else {
             showToast(data.detail || "Broadcast failed.", true);
