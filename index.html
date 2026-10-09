@@ -1851,57 +1851,67 @@
     </div>
   </div>
 
-  <!-- Modal: UltraMsg QR Gateway Configuration -->
+  <!-- Modal: WhatsApp QR Gateway Configuration (100% Free & Cloud) -->
   <div id="gatewayModal" class="modal-overlay">
-    <div class="modal-box" style="max-width: 580px; border: 1.5px solid var(--gold); box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 30px rgba(201,169,98,0.2);">
+    <div class="modal-box" style="max-width: 600px; border: 1.5px solid var(--gold); box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 30px rgba(201,169,98,0.2);">
       <div class="modal-header">
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; color: #fff;">
-          <span style="font-size: 1.25rem;">📱</span> WhatsApp QR Gateway Connection
+          <span style="font-size: 1.25rem;">📱</span> WhatsApp Background Gateway Setup
         </h3>
         <button class="modal-close" onclick="closeModal('gatewayModal')">&times;</button>
       </div>
 
       <div style="padding: 0.5rem 0 0;">
-        <!-- Quick Explanation Callout -->
-        <div style="background: rgba(37, 211, 102, 0.08); border: 1px solid rgba(37, 211, 102, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
-          <h4 style="color: #25D366; font-size: 0.95rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 6px;">
-            <span>⚡</span> 100% Background Delivery (Zero Popups!)
-          </h4>
-          <p style="color: var(--text-body); font-size: 0.82rem; margin-bottom: 0.5rem; line-height: 1.5;">
-            By linking your WhatsApp via UltraMsg Gateway, our server sends bulk announcements directly into your directors' &amp; agents' phones in the background. WhatsApp will <b>NEVER</b> open on your computer!
+        <!-- 100% Free Gateway Card (Primary Recommended) -->
+        <div style="background: rgba(37, 211, 102, 0.08); border: 1.5px solid rgba(37, 211, 102, 0.4); border-radius: 10px; padding: 1.15rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h4 style="color: #25D366; font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 6px;">
+              <span>🏆</span> 100% Free Gateway (Zero Monthly Fees)
+            </h4>
+            <span id="localGatewayBadge" class="badge" style="background: rgba(201,169,98,0.2); color: var(--gold); font-size: 0.75rem;">Checking...</span>
+          </div>
+          <p style="color: #cbd5e1; font-size: 0.83rem; margin-bottom: 0.85rem; line-height: 1.5;">
+            Runs directly on your laptop with <b>zero subscription costs forever</b>. Just scan the QR code with your new WhatsApp phone once!
           </p>
-          <ol style="margin: 0; padding-left: 1.2rem; color: #cbd5e1; font-size: 0.82rem; line-height: 1.6;">
-            <li>Go to <a href="https://ultramsg.com" target="_blank" rel="noopener noreferrer" style="color: var(--gold); text-decoration: underline; font-weight: 600;">UltraMsg.com</a> and sign in / create a free instance.</li>
-            <li>Scan the QR code on your UltraMsg screen using your phone WhatsApp (<b>Linked Devices &gt; Link a Device</b>).</li>
-            <li>Copy your <b>Instance ID</b> and <b>Token</b> from UltraMsg and paste below:</li>
-          </ol>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="http://localhost:3300" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="background: #25D366; color: #fff; font-weight: 700; border: none; text-decoration: none; padding: 7px 16px; border-radius: 5px; display: inline-flex; align-items: center; gap: 6px;">
+              📲 Open QR Code Screen (Scan Phone)
+            </a>
+            <button type="button" class="btn btn-outline btn-sm" onclick="checkLocalGatewayLive()" style="border-color: rgba(255,255,255,0.2); color: #fff;">
+              🔄 Refresh Status
+            </button>
+          </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label" style="font-size: 0.85rem; color: #fff;">UltraMsg Instance ID *</label>
-          <input type="text" id="gatewayInstanceId" class="form-input" placeholder="e.g. instance104829 or 104829" style="background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.15);">
-          <small style="color: var(--text-muted); font-size: 0.75rem;">Shown at the top of your UltraMsg instance dashboard.</small>
-        </div>
+        <!-- Cloud Gateway (UltraMsg Optional) Accordion -->
+        <div style="border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.85rem 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleCloudGatewayInputs()">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">
+              ☁️ UltraMsg Cloud Gateway Settings (Optional Fallback)
+            </span>
+            <span id="cloudGatewayChevron" style="color: var(--gold); font-size: 0.8rem;">▼ Click to expand</span>
+          </div>
 
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label class="form-label" style="font-size: 0.85rem; color: #fff;">UltraMsg Token *</label>
-          <input type="password" id="gatewayToken" class="form-input" placeholder="Paste your UltraMsg Token" style="background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.15);">
-          <small style="color: var(--text-muted); font-size: 0.75rem;">Authentication token for this instance.</small>
+          <div id="cloudGatewayInputs" style="display: none; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.85rem;">
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label" style="font-size: 0.8rem; color: #fff;">UltraMsg Instance ID</label>
+              <input type="text" id="gatewayInstanceId" class="form-input" placeholder="e.g. instance193797" style="background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.15);">
+            </div>
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label" style="font-size: 0.8rem; color: #fff;">UltraMsg Token</label>
+              <input type="password" id="gatewayToken" class="form-input" placeholder="Paste your UltraMsg Token" style="background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.15);">
+            </div>
+            <button type="button" class="btn btn-gold btn-sm" onclick="saveGatewayConfig()" id="saveGatewayBtn" style="font-weight: 600;">
+              💾 Save UltraMsg Settings
+            </button>
+          </div>
         </div>
 
         <!-- Live Status Box -->
-        <div id="gatewayStatusAlert" style="display: none; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.82rem; margin-bottom: 1.25rem;"></div>
+        <div id="gatewayStatusAlert" style="display: none; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.82rem; margin-top: 1.25rem;"></div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
-          <button type="button" class="btn btn-outline btn-sm" onclick="testGatewayConnection()" id="gatewayTestBtn" style="border-color: #38bdf8; color: #38bdf8;">
-            🔍 Test Live Connection
-          </button>
-          <div style="display: flex; gap: 0.75rem;">
-            <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('gatewayModal')">Cancel</button>
-            <button type="button" class="btn btn-gold btn-sm" onclick="saveGatewayConfig()" id="saveGatewayBtn" style="font-weight: 600;">
-              💾 Save &amp; Connect Gateway
-            </button>
-          </div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 1.25rem;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('gatewayModal')">Close</button>
         </div>
       </div>
     </div>
@@ -6839,47 +6849,112 @@ const DEFAULT_PROJECTS = [
       });
     }
 
-    // --- UltraMsg QR Gateway Background Send ---
+    // --- WhatsApp Gateway Background Broadcast Engine (Free & Cloud) ---
     let waGatewayConfigCached = null;
+    let activeGatewayInfo = null;
+
+    function toggleCloudGatewayInputs() {
+      const box = document.getElementById("cloudGatewayInputs");
+      const chev = document.getElementById("cloudGatewayChevron");
+      if (!box) return;
+      if (box.style.display === "none") {
+        box.style.display = "block";
+        if (chev) chev.textContent = "▲ Click to collapse";
+      } else {
+        box.style.display = "none";
+        if (chev) chev.textContent = "▼ Click to expand";
+      }
+    }
+
+    async function checkLocalGatewayLive() {
+      const statusText = document.getElementById("waGatewayStatusText");
+      const localBadge = document.getElementById("localGatewayBadge");
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch("http://localhost:3300/status", { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.connected) {
+            activeGatewayInfo = { type: "local", phone: data.phone };
+            if (statusText) {
+              statusText.textContent = `🟢 Free Gateway (+${data.phone || 'Online'})`;
+              statusText.style.color = "#4ade80";
+            }
+            if (localBadge) {
+              localBadge.textContent = `🟢 Connected (+${data.phone || 'Online'})`;
+              localBadge.style.background = "rgba(74, 222, 128, 0.2)";
+              localBadge.style.color = "#4ade80";
+            }
+            return activeGatewayInfo;
+          } else if (data.qr) {
+            activeGatewayInfo = { type: "local_unscanned" };
+            if (statusText) {
+              statusText.textContent = "📱 Scan QR Code";
+              statusText.style.color = "var(--gold)";
+            }
+            if (localBadge) {
+              localBadge.textContent = "📱 Waiting for QR Scan";
+              localBadge.style.background = "rgba(201, 169, 98, 0.2)";
+              localBadge.style.color = "var(--gold)";
+            }
+            return null;
+          }
+        }
+      } catch (_) {
+        if (localBadge) {
+          localBadge.textContent = "⚪ Offline (Double-click Start_WhatsApp_Gateway)";
+          localBadge.style.background = "rgba(255,255,255,0.08)";
+          localBadge.style.color = "var(--text-muted)";
+        }
+      }
+      return null;
+    }
 
     async function checkGatewayConfig() {
       const statusText = document.getElementById("waGatewayStatusText");
-      const instInput = document.getElementById("gatewayInstanceId");
+
+      // 1. First priority: Check 100% Free Local Gateway on http://localhost:3300
+      const localGw = await checkLocalGatewayLive();
+      if (localGw && localGw.type === "local") {
+        return localGw;
+      }
+
+      // 2. Fallback: Check Cloud UltraMsg Gateway
       try {
         const res = await apiRequest("/admin/whatsapp/gateway-config");
         if (res.ok) {
           const cfg = await res.json();
           waGatewayConfigCached = cfg;
           if (cfg.configured) {
-            if (statusText) {
-              statusText.textContent = `🟢 Connected (${cfg.instance_id})`;
-              statusText.style.color = "#4ade80";
+            activeGatewayInfo = { type: "cloud", instance_id: cfg.instance_id };
+            if (statusText && (!activeGatewayInfo || activeGatewayInfo.type !== "local")) {
+              statusText.textContent = `🟢 Cloud Gateway (${cfg.instance_id})`;
+              statusText.style.color = "#38bdf8";
             }
-            if (instInput && !instInput.value) {
-              instInput.value = cfg.instance_id;
-            }
-            return true;
-          } else {
-            if (statusText) {
-              statusText.textContent = "⚪ Setup QR Link";
-              statusText.style.color = "var(--gold)";
-            }
-            return false;
+            const instInput = document.getElementById("gatewayInstanceId");
+            if (instInput && !instInput.value) instInput.value = cfg.instance_id;
+            return activeGatewayInfo;
           }
         }
       } catch (e) {
-        console.error("Error checking gateway config:", e);
+        console.error("Error checking cloud gateway config:", e);
       }
-      return false;
+
+      if (statusText && (!activeGatewayInfo || activeGatewayInfo.type !== "local_unscanned")) {
+        statusText.textContent = "⚡ Setup Free Gateway";
+        statusText.style.color = "var(--gold)";
+      }
+      return null;
     }
 
     function openGatewayModal() {
       openModal("gatewayModal");
-      checkGatewayConfig().then(isConfigured => {
-        if (isConfigured) {
-          testGatewayConnection();
-        }
-      });
+      checkLocalGatewayLive();
+      checkGatewayConfig();
     }
 
     async function testGatewayConnection() {
@@ -6901,12 +6976,12 @@ const DEFAULT_PROJECTS = [
           alertBox.style.background = "rgba(74, 222, 128, 0.15)";
           alertBox.style.border = "1px solid rgba(74, 222, 128, 0.4)";
           alertBox.style.color = "#4ade80";
-          alertBox.innerHTML = `✅ <b>WhatsApp is Live & Connected!</b><br>Instance: <b>${data.instance_id}</b> (Status: ${data.account_status}). Ready for silent background broadcasting!`;
+          alertBox.innerHTML = `✅ <b>WhatsApp is Live & Connected!</b><br>Instance: <b>${data.instance_id}</b> (${data.account_status}). Ready for silent background broadcasting!`;
         } else if (res.ok && data.configured) {
           alertBox.style.background = "rgba(234, 179, 8, 0.15)";
           alertBox.style.border = "1px solid rgba(234, 179, 8, 0.4)";
           alertBox.style.color = "#facc15";
-          alertBox.innerHTML = `⚠️ <b>Instance Configured, but phone not linked yet:</b> ${data.message || data.account_status}.<br>Please open UltraMsg and scan the QR code with WhatsApp on your phone (Linked Devices).`;
+          alertBox.innerHTML = `⚠️ <b>Instance Configured, but phone not linked:</b> ${data.message || data.account_status}. Please scan QR code in UltraMsg dashboard.`;
         } else {
           alertBox.style.background = "rgba(239, 68, 68, 0.15)";
           alertBox.style.border = "1px solid rgba(239, 68, 68, 0.4)";
@@ -6956,7 +7031,7 @@ const DEFAULT_PROJECTS = [
       } finally {
         if (saveBtn) {
           saveBtn.disabled = false;
-          saveBtn.textContent = "💾 Save & Connect Gateway";
+          saveBtn.textContent = "💾 Save UltraMsg Settings";
         }
       }
     }
@@ -6974,21 +7049,24 @@ const DEFAULT_PROJECTS = [
         return;
       }
 
-      // Verify gateway configuration first
-      const isConfigured = await checkGatewayConfig();
-      if (!isConfigured) {
+      // Check which gateway is available
+      const gw = await checkGatewayConfig();
+      if (!gw) {
         showArkAlert(
-          "WhatsApp QR Gateway Required",
-          "To send direct bulk announcements in the background without opening WhatsApp, please connect your UltraMsg account once.\n\nOpening the 1-minute setup modal now...",
+          "WhatsApp Gateway Setup Required",
+          "To send direct bulk messages in the background with zero popups, please connect your WhatsApp via the Free Gateway!\n\n1. Double-click 'Start_WhatsApp_Gateway' on your Desktop (or click Setup below)\n2. Scan the QR code with your new phone number.\n\nOpening setup now...",
           "info"
         );
         openGatewayModal();
         return;
       }
 
+      const isLocal = gw.type === "local";
+      const gwTitle = isLocal ? `100% Free Gateway (+${gw.phone || 'Linked Phone'})` : `Cloud Gateway (${gw.instance_id})`;
+
       showArkConfirm(
         `Send Silent Background Broadcast?`,
-        `This will deliver your announcement directly to <b>${selected.length}</b> selected members simultaneously in the background.<br><br>✓ <b>100% Silent</b> — WhatsApp will NOT open on your computer<br>✓ Messages deliver directly into each member's phone`,
+        `This will send direct WhatsApp messages to all <b>${selected.length}</b> selected members in the background using your <b>${gwTitle}</b>.<br><br>✓ <b>100% Silent</b> — WhatsApp will NOT open on your computer<br>✓ Messages deliver directly into each member's phone`,
         async () => {
           const btn = document.getElementById("waGatewayBroadcastBtn");
           const origHtml = btn ? btn.innerHTML : "";
@@ -6999,36 +7077,65 @@ const DEFAULT_PROJECTS = [
           showToast(`🚀 Delivering WhatsApp announcements to ${selected.length} members in background...`);
 
           try {
-            const team = document.getElementById("waTeamSelect")?.value || "all_members";
-            const res = await apiRequest("/admin/whatsapp/send-gateway-broadcast", {
-              method: "POST",
-              body: JSON.stringify({
-                director_id: team,
-                message: msg,
-                selected_phones: selected.map(r => r.clean_phone)
-              })
-            });
-            const data = await res.json();
-            if (res.ok && data.success) {
-              // Mark selected members as sent in the UI checklist
-              selected.forEach(r => {
-                r.sent = true;
-                const idx = waPreparedRecipients.findIndex(m => m.phone === r.phone && m.agent_name === r.agent_name);
-                if (idx >= 0) markWaDispatched(idx);
+            if (isLocal) {
+              // Direct dispatch via 100% Free Local Gateway (Zero cloud fees!)
+              const res = await fetch("http://localhost:3300/bulk-send", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  phones: selected.map(r => r.clean_phone),
+                  message: msg,
+                  delayMs: 1500
+                })
               });
-              updateTurboBtn();
+              const data = await res.json();
 
-              let alertMsg = `🎉 Successfully delivered to <b>${data.sent}</b> members directly in the background!`;
-              if (data.failed > 0) {
-                alertMsg += `<br><br>⚠️ <b>${data.failed}</b> failed (invalid number or gateway error).`;
+              if (res.ok && data.success) {
+                selected.forEach(r => {
+                  r.sent = true;
+                  const idx = waPreparedRecipients.findIndex(m => m.phone === r.phone && m.agent_name === r.agent_name);
+                  if (idx >= 0) markWaDispatched(idx);
+                });
+                updateTurboBtn();
+
+                let alertMsg = `🎉 Successfully delivered to <b>${data.sent}</b> members via your Free Gateway!`;
+                if (data.failed > 0) alertMsg += `<br><br>⚠️ <b>${data.failed}</b> failed (invalid numbers).`;
+                alertMsg += `<br><br>✓ Zero WhatsApp windows were opened on your screen.`;
+
+                showArkAlert("Broadcast Complete!", alertMsg, data.sent > 0 ? "success" : "warning");
+                showToast(data.message);
+              } else {
+                showArkAlert("Broadcast Failed", data.error || "Failed to dispatch via Free Gateway.", "danger");
+                showToast("Dispatch failed", true);
               }
-              alertMsg += `<br><br>✓ Zero WhatsApp windows or tabs were opened on your computer.`;
-
-              showArkAlert("Background Broadcast Complete!", alertMsg, data.sent > 0 ? "success" : "warning");
-              showToast(data.message);
             } else {
-              showArkAlert("Broadcast Failed", data.detail || data.message || "Failed to dispatch messages via gateway.", "danger");
-              showToast(data.detail || "Broadcast failed", true);
+              // Cloud Gateway Dispatch
+              const team = document.getElementById("waTeamSelect")?.value || "all_members";
+              const res = await apiRequest("/admin/whatsapp/send-gateway-broadcast", {
+                method: "POST",
+                body: JSON.stringify({
+                  director_id: team,
+                  message: msg,
+                  selected_phones: selected.map(r => r.clean_phone)
+                })
+              });
+              const data = await res.json();
+              if (res.ok && data.success) {
+                selected.forEach(r => {
+                  r.sent = true;
+                  const idx = waPreparedRecipients.findIndex(m => m.phone === r.phone && m.agent_name === r.agent_name);
+                  if (idx >= 0) markWaDispatched(idx);
+                });
+                updateTurboBtn();
+
+                let alertMsg = `🎉 Successfully delivered to <b>${data.sent}</b> members directly in the background!`;
+                if (data.failed > 0) alertMsg += `<br><br>⚠️ <b>${data.failed}</b> failed.`;
+                showArkAlert("Background Broadcast Complete!", alertMsg, data.sent > 0 ? "success" : "warning");
+                showToast(data.message);
+              } else {
+                showArkAlert("Broadcast Failed", data.detail || data.message || "Failed to dispatch.", "danger");
+                showToast(data.detail || "Broadcast failed", true);
+              }
             }
           } catch (e) {
             showArkAlert("Broadcast Error", e.message, "danger");
