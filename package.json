@@ -1,30 +1,12 @@
 {
-  "name": "ark-infra",
+  "name": "ark-infra-admin-portal",
   "version": "1.0.0",
-  "description": "",
-  "main": "chatbot.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/akasheswar7/arkinfravizag.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "description": "ARK Infra Admin Portal & Cloud WhatsApp Web Engine",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/akasheswar7/arkinfravizag/issues"
-  },
-  "homepage": {
-    "url": "https://github.com/akasheswar7/arkinfravizag#readme"
-  },
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc14",
     "mongodb": "^6.12.0",
     "pino": "^10.4.0",
-    "qrcode": "^1.5.4",
-    "sharp": "^0.35.3"
+    "qrcode": "^1.5.4"
   }
 }
