@@ -6872,44 +6872,51 @@ const DEFAULT_PROJECTS = [
       });
     }
 
-    // --- 100% Free WhatsApp Gateway Engine (Direct Local + Cloud Bridge Failover) ---
+    // --- 100% Free WhatsApp Gateway Engine (Parallel Local + Cloud Bridge Race) ---
     let waGatewayPollTimer = null;
     let isWaGatewayConnected = false;
     let connectedGatewayPhone = null;
+    let isCheckingGateway = false;
+    let consecutiveGatewayFailures = 0;
+
+    async function fetchSingleGatewayUrl(url, mode, timeoutMs) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (mode === "bridge" && (!data || !data.online)) {
+          throw new Error("Bridge offline");
+        }
+        if (!data || (!data.connected && !data.qr)) {
+          throw new Error("No QR or connection yet");
+        }
+        return { online: true, mode, data };
+      } catch (e) {
+        clearTimeout(timeoutId);
+        throw e;
+      }
+    }
 
     async function fetchGatewayStatusAny() {
-      const localUrls = ["http://localhost:3300/status", "http://127.0.0.1:3300/status"];
-      for (const url of localUrls) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 1800);
-          const res = await fetch(url, { signal: controller.signal });
-          clearTimeout(timeoutId);
-          if (res.ok) {
-            const data = await res.json();
-            return { online: true, mode: "local", baseUrl: url.replace("/status", ""), data };
-          }
-        } catch (_) {}
-      }
-
-      // Fallback to Cloud Bridge (works even when HTTPS browser blocks HTTP localhost)
+      const bridgeUrl = `${CLOUD_API_BASE}/admin/whatsapp/bridge-status?t=${Date.now()}`;
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(`${API_BASE}/admin/whatsapp/bridge-status`, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.online) {
-            return { online: true, mode: "bridge", baseUrl: `${API_BASE}/admin/whatsapp`, data };
-          }
-        }
-      } catch (_) {}
-
-      return { online: false };
+        return await Promise.any([
+          fetchSingleGatewayUrl("http://localhost:3300/status", "local", 1500),
+          fetchSingleGatewayUrl("http://127.0.0.1:3300/status", "local", 1500),
+          fetchSingleGatewayUrl(bridgeUrl, "bridge", 9000)
+        ]);
+      } catch (_) {
+        return { online: false };
+      }
     }
 
     async function checkLocalGatewayLive() {
+      if (isCheckingGateway) return isWaGatewayConnected;
+      isCheckingGateway = true;
+
       const statusText = document.getElementById("waGatewayStatusText");
       const statusBtn = document.getElementById("waGatewayConfigBtn");
       const connectedBox = document.getElementById("modalConnectedBox");
@@ -6919,60 +6926,62 @@ const DEFAULT_PROJECTS = [
       const qrImg = document.getElementById("modalQrImg");
       const offlineNotice = document.getElementById("modalEngineOfflineNotice");
 
-      const statusRes = await fetchGatewayStatusAny();
+      try {
+        const statusRes = await fetchGatewayStatusAny();
 
-      if (statusRes.online && statusRes.data) {
-        const data = statusRes.data;
-        if (offlineNotice) offlineNotice.style.display = "none";
+        if (statusRes.online && statusRes.data) {
+          consecutiveGatewayFailures = 0;
+          const data = statusRes.data;
+          if (offlineNotice) offlineNotice.style.display = "none";
 
-        if (data.connected && data.phone) {
-          isWaGatewayConnected = true;
-          connectedGatewayPhone = data.phone;
+          if (data.connected && data.phone) {
+            isWaGatewayConnected = true;
+            connectedGatewayPhone = data.phone;
 
-          if (statusText) statusText.textContent = `🟢 WhatsApp Linked (+${data.phone})`;
-          if (statusBtn) {
-            statusBtn.style.borderColor = "rgba(74, 222, 128, 0.4)";
-            statusBtn.style.color = "#4ade80";
-            statusBtn.style.background = "rgba(74, 222, 128, 0.08)";
+            if (statusText) statusText.textContent = `🟢 WhatsApp Linked (+${data.phone})`;
+            if (statusBtn) {
+              statusBtn.style.borderColor = "rgba(74, 222, 128, 0.4)";
+              statusBtn.style.color = "#4ade80";
+              statusBtn.style.background = "rgba(74, 222, 128, 0.08)";
+            }
+            if (connectedBox) connectedBox.style.display = "block";
+            if (unlinkedBox) unlinkedBox.style.display = "none";
+            if (phoneEl) phoneEl.textContent = `+${data.phone}`;
+            return true;
+          } else {
+            isWaGatewayConnected = false;
+            connectedGatewayPhone = null;
+
+            if (statusText) statusText.textContent = "⚪ WhatsApp Not Linked (Click to Link)";
+            if (statusBtn) {
+              statusBtn.style.borderColor = "rgba(234, 179, 8, 0.4)";
+              statusBtn.style.color = "#facc15";
+              statusBtn.style.background = "transparent";
+            }
+            if (connectedBox) connectedBox.style.display = "none";
+            if (unlinkedBox) unlinkedBox.style.display = "block";
+            if (data.qr) {
+              if (qrHolder) qrHolder.style.display = "inline-block";
+              if (qrImg) qrImg.src = data.qr;
+            }
+            return false;
           }
-          if (connectedBox) connectedBox.style.display = "block";
-          if (unlinkedBox) unlinkedBox.style.display = "none";
-          if (phoneEl) phoneEl.textContent = `+${data.phone}`;
-          return true;
-        } else {
+        }
+
+        consecutiveGatewayFailures++;
+        if (consecutiveGatewayFailures >= 2 && !qrImg?.getAttribute("src")) {
           isWaGatewayConnected = false;
           connectedGatewayPhone = null;
-
           if (statusText) statusText.textContent = "⚪ WhatsApp Not Linked (Click to Link)";
-          if (statusBtn) {
-            statusBtn.style.borderColor = "rgba(234, 179, 8, 0.4)";
-            statusBtn.style.color = "#facc15";
-            statusBtn.style.background = "transparent";
-          }
           if (connectedBox) connectedBox.style.display = "none";
           if (unlinkedBox) unlinkedBox.style.display = "block";
-          if (data.qr) {
-            if (qrHolder) qrHolder.style.display = "inline-block";
-            if (qrImg) qrImg.src = data.qr;
-          }
-          return false;
+          if (qrHolder) qrHolder.style.display = "none";
+          if (offlineNotice) offlineNotice.style.display = "block";
         }
+        return false;
+      } finally {
+        isCheckingGateway = false;
       }
-
-      isWaGatewayConnected = false;
-      connectedGatewayPhone = null;
-
-      if (statusText) statusText.textContent = "⚪ WhatsApp Not Linked (Click to Link)";
-      if (statusBtn) {
-        statusBtn.style.borderColor = "rgba(234, 179, 8, 0.4)";
-        statusBtn.style.color = "#facc15";
-        statusBtn.style.background = "transparent";
-      }
-      if (connectedBox) connectedBox.style.display = "none";
-      if (unlinkedBox) unlinkedBox.style.display = "block";
-      if (qrHolder) qrHolder.style.display = "none";
-      if (offlineNotice) offlineNotice.style.display = "block";
-      return false;
     }
 
     async function checkGatewayConfig() {

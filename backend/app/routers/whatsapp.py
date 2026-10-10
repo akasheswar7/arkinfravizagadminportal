@@ -554,7 +554,7 @@ async def bridge_status():
         return {"success": False, "online": False}
 
     age = time.time() - float(doc.get("updated_at") or 0)
-    if age > 20:
+    if age > 120:
         return {"success": False, "online": False, "age": age}
 
     return {
