@@ -547,15 +547,11 @@ async def bridge_heartbeat(payload: BridgeHeartbeatPayload):
 
 @router.get("/bridge-status")
 async def bridge_status():
-    """Returns live status & QR code of the local PC WhatsApp Gateway via cloud relay."""
+    """Returns live status & QR code of the WhatsApp Gateway via cloud relay."""
     settings_col = get_collection("system_settings")
     doc = await settings_col.find_one({"key": "local_wa_bridge"})
     if not doc:
         return {"success": False, "online": False}
-
-    age = time.time() - float(doc.get("updated_at") or 0)
-    if age > 120:
-        return {"success": False, "online": False, "age": age}
 
     return {
         "success": True,
