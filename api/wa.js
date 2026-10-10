@@ -1,14 +1,14 @@
 const { MongoClient } = require('mongodb');
 const qrcode = require('qrcode');
 const pino = require('pino');
-const {
-  default: makeWASocket,
-  initAuthCreds,
-  BufferJSON,
-  DisconnectReason,
-  fetchLatestWaWebVersion,
-  Browsers
-} = require('@whiskeysockets/baileys');
+
+let baileysMod = null;
+async function getBaileys() {
+  if (!baileysMod) {
+    baileysMod = await import('@whiskeysockets/baileys');
+  }
+  return baileysMod;
+}
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://arkinfraproperties_db_user:f2lrswMhYaLpkw0k@cluster0.xvovezq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 const DB_NAME = process.env.MONGODB_DB_NAME || process.env.DATABASE_NAME || 'arkinfradev';
@@ -26,6 +26,7 @@ async function getDb() {
 }
 
 async function useMongoAuthState(collection) {
+  const { initAuthCreds, BufferJSON } = await getBaileys();
   const writeData = async (data, id) => {
     const serialized = JSON.stringify(data, BufferJSON.replacer);
     await collection.updateOne(
@@ -108,6 +109,14 @@ module.exports = async (req, res) => {
   const action = (req.query && req.query.action) || (req.body && req.body.action) || 'status';
 
   try {
+    const {
+      default: makeWASocket,
+      BufferJSON,
+      DisconnectReason,
+      fetchLatestWaWebVersion,
+      Browsers
+    } = await getBaileys();
+
     const db = await getDb();
     const authCol = db.collection('wa_cloud_auth');
     const settingsCol = db.collection('system_settings');
