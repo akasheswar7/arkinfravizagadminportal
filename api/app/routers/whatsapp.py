@@ -585,4 +585,134 @@ async def bridge_command(payload: BridgeCommandPayload):
     )
     return {"success": True, "command_id": cmd["id"], "message": f"Queued {payload.action} for WhatsApp Gateway."}
 
+from fastapi.responses import HTMLResponse
+
+@router.get("/gateway-dashboard", response_class=HTMLResponse)
+async def gateway_dashboard():
+    """Universal Cloud QR Dashboard that works on any laptop, PC, or mobile browser."""
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ARK Infra - WhatsApp Gateway Engine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --navy: #050d1a;
+      --navy-card: #0c182c;
+      --gold: #c9a962;
+      --green: #25d366;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--navy);
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+    .card {
+      background: var(--navy-card);
+      border: 1.5px solid var(--gold);
+      border-radius: 14px;
+      padding: 2.2rem;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 30px rgba(201,169,98,0.2);
+    }
+    h1 { margin: 0 0 0.5rem 0; color: var(--gold); font-size: 1.6rem; }
+    p { color: #cbd5e1; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem; }
+    .qr-box { background: #fff; padding: 12px; border-radius: 10px; display: inline-block; margin: 1rem 0; }
+    .badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; margin-bottom: 1rem; }
+    .badge-success { background: rgba(37,211,102,0.2); color: var(--green); border: 1px solid var(--green); }
+    .badge-waiting { background: rgba(201,169,98,0.2); color: var(--gold); border: 1px solid var(--gold); }
+    .btn { background: var(--gold); color: #000; border: none; padding: 8px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-top: 1rem; }
+    .btn-danger { background: #ef4444; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>📱 ARK Infra WhatsApp Gateway</h1>
+    <p>100% Free Background Bulk Delivery Engine (Universal Cloud Bridge)</p>
+    <div id="statusArea">
+      <div class="badge badge-waiting">⏳ Checking Connection...</div>
+    </div>
+    <div id="qrArea" style="display:none;">
+      <div class="qr-box">
+        <img id="qrImg" src="" alt="Scan QR Code" style="width: 280px; height: 280px; display:block;">
+      </div>
+      <p style="font-size: 0.85rem; color: #94a3b8;">
+        Open <b>WhatsApp</b> on your phone ➔ <b>Linked Devices</b> ➔ <b>Link a Device</b> ➔ Scan this code!
+      </p>
+    </div>
+    <div id="connectedArea" style="display:none;">
+      <div class="badge badge-success" id="connectedBadge">🟢 Connected &amp; Ready</div>
+      <p style="color: #4ade80; font-size: 0.95rem;">
+        Your WhatsApp is connected! You can now send bulk messages from your Admin Portal on any laptop or phone with 1-click.
+      </p>
+      <button class="btn btn-danger" onclick="logout()">Unlink / Connect Another Number</button>
+    </div>
+  </div>
+  <script>
+    async function checkStatus() {
+      let data = null;
+      try {
+        const r = await fetch('/api/admin/whatsapp/bridge-status');
+        if (r.ok) {
+          const d = await r.json();
+          if (d && d.online) data = d;
+        }
+      } catch (_) {}
+      if (!data) {
+        try {
+          const r2 = await fetch('http://localhost:3300/status');
+          if (r2.ok) data = await r2.json();
+        } catch (_) {}
+      }
+      if (data) {
+        if (data.connected) {
+          document.getElementById('statusArea').style.display = 'none';
+          document.getElementById('qrArea').style.display = 'none';
+          document.getElementById('connectedArea').style.display = 'block';
+          document.getElementById('connectedBadge').textContent = '🟢 Connected: +' + (data.phone || '');
+        } else if (data.qr) {
+          document.getElementById('statusArea').style.display = 'none';
+          document.getElementById('connectedArea').style.display = 'none';
+          document.getElementById('qrArea').style.display = 'block';
+          document.getElementById('qrImg').src = data.qr;
+        } else {
+          document.getElementById('statusArea').style.display = 'block';
+          document.getElementById('statusArea').innerHTML = '<div class="badge badge-waiting">⏳ Generating QR Code...</div>';
+          document.getElementById('qrArea').style.display = 'none';
+          document.getElementById('connectedArea').style.display = 'none';
+        }
+      } else {
+        document.getElementById('statusArea').style.display = 'block';
+        document.getElementById('statusArea').innerHTML = '<div class="badge" style="background:rgba(239,68,68,0.2);color:#f87171;">Gateway host computer is currently asleep/offline</div>';
+        document.getElementById('qrArea').style.display = 'none';
+        document.getElementById('connectedArea').style.display = 'none';
+      }
+    }
+    async function logout() {
+      if (!confirm('Are you sure you want to unlink this WhatsApp number?')) return;
+      await fetch('/api/admin/whatsapp/bridge-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' })
+      });
+      alert('Unlinked! Generating new QR code...');
+      setTimeout(checkStatus, 2000);
+    }
+    setInterval(checkStatus, 2500);
+    checkStatus();
+  </script>
+</body>
+</html>"""
+
+
 
