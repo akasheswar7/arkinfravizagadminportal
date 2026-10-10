@@ -659,13 +659,20 @@ async def gateway_dashboard():
     </div>
   </div>
   <script>
+    let pairing = false;
+    function triggerPair() {
+      if (pairing) return;
+      pairing = true;
+      fetch('/api/wa?action=pair&t=' + Date.now()).catch(() => {}).finally(() => { pairing = false; });
+    }
     async function checkStatus() {
       let data = null;
       try {
-        const r = await fetch('/api/admin/whatsapp/bridge-status');
+        const r = await fetch('/api/wa?action=status&t=' + Date.now());
         if (r.ok) {
           const d = await r.json();
-          if (d && d.online) data = d;
+          if (d && d.needPair) triggerPair();
+          if (d && (d.connected || d.qr)) data = d;
         }
       } catch (_) {}
       if (!data) {
@@ -674,41 +681,32 @@ async def gateway_dashboard():
           if (r2.ok) data = await r2.json();
         } catch (_) {}
       }
-      if (data) {
-        if (data.connected) {
-          document.getElementById('statusArea').style.display = 'none';
-          document.getElementById('qrArea').style.display = 'none';
-          document.getElementById('connectedArea').style.display = 'block';
-          document.getElementById('connectedBadge').textContent = '🟢 Connected: +' + (data.phone || '');
-        } else if (data.qr) {
-          document.getElementById('statusArea').style.display = 'none';
-          document.getElementById('connectedArea').style.display = 'none';
-          document.getElementById('qrArea').style.display = 'block';
-          document.getElementById('qrImg').src = data.qr;
-        } else {
-          document.getElementById('statusArea').style.display = 'block';
-          document.getElementById('statusArea').innerHTML = '<div class="badge badge-waiting">⏳ Generating QR Code...</div>';
-          document.getElementById('qrArea').style.display = 'none';
-          document.getElementById('connectedArea').style.display = 'none';
-        }
+      if (data && data.connected) {
+        document.getElementById('statusArea').style.display = 'none';
+        document.getElementById('qrArea').style.display = 'none';
+        document.getElementById('connectedArea').style.display = 'block';
+        document.getElementById('connectedBadge').textContent = '🟢 Connected: +' + (data.phone || '');
+      } else if (data && data.qr) {
+        document.getElementById('statusArea').style.display = 'none';
+        document.getElementById('connectedArea').style.display = 'none';
+        document.getElementById('qrArea').style.display = 'block';
+        document.getElementById('qrImg').src = data.qr;
       } else {
+        triggerPair();
         document.getElementById('statusArea').style.display = 'block';
-        document.getElementById('statusArea').innerHTML = '<div class="badge" style="background:rgba(239,68,68,0.2);color:#f87171;">Gateway host computer is currently asleep/offline</div>';
+        document.getElementById('statusArea').innerHTML = '<div class="badge badge-waiting">⏳ Loading WhatsApp Web QR Code...</div>';
         document.getElementById('qrArea').style.display = 'none';
         document.getElementById('connectedArea').style.display = 'none';
       }
     }
     async function logout() {
       if (!confirm('Are you sure you want to unlink this WhatsApp number?')) return;
-      await fetch('/api/admin/whatsapp/bridge-command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'logout' })
-      });
+      await fetch('/api/wa?action=logout', { method: 'POST' });
       alert('Unlinked! Generating new QR code...');
-      setTimeout(checkStatus, 2000);
+      triggerPair();
+      setTimeout(checkStatus, 1800);
     }
-    setInterval(checkStatus, 2500);
+    setInterval(checkStatus, 2200);
     checkStatus();
   </script>
 </body>

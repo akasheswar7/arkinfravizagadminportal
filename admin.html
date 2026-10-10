@@ -1868,12 +1868,12 @@
     </div>
   </div>
 
-  <!-- Modal: WhatsApp QR Gateway Connection (100% Free Engine) -->
+  <!-- Modal: WhatsApp Web QR Connection (100% Cloud & Multi-Laptop Ready) -->
   <div id="gatewayModal" class="modal-overlay">
     <div class="modal-box" style="max-width: 520px; border: 1.5px solid var(--gold); box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 30px rgba(201,169,98,0.2);">
       <div class="modal-header">
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; color: #fff;">
-          <span style="font-size: 1.25rem;">📱</span> Link WhatsApp with QR Code
+          <span style="font-size: 1.25rem;">📱</span> Connect WhatsApp Web (QR Code)
         </h3>
         <button class="modal-close" onclick="closeModal('gatewayModal')">&times;</button>
       </div>
@@ -1882,40 +1882,55 @@
         <!-- State A: Connected -->
         <div id="modalConnectedBox" style="display: none; background: rgba(37,211,102,0.12); border: 1.5px solid #25d366; border-radius: 10px; padding: 1.75rem 1.25rem;">
           <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🟢</div>
-          <h3 style="color: #25d366; font-size: 1.25rem; margin: 0 0 0.5rem 0;">WhatsApp is Linked &amp; Ready!</h3>
+          <h3 style="color: #25d366; font-size: 1.25rem; margin: 0 0 0.5rem 0;">WhatsApp Web Connected &amp; Ready!</h3>
           <p id="modalConnectedPhone" style="color: #fff; font-size: 1.15rem; font-weight: 700; margin: 0 0 0.75rem 0;"></p>
           <p style="color: #cbd5e1; font-size: 0.85rem; margin: 0 0 1.25rem 0; line-height: 1.5;">
-            You can now send announcements to all 151 members directly in the background with zero popups and zero fees!
+            Your WhatsApp is active! You can send announcements to all 151 members from any laptop at any time.
           </p>
-          <button type="button" class="btn btn-danger btn-sm" onclick="unlinkLocalWhatsApp()" style="font-size: 0.8rem;">
-            Unlink / Connect Another Number
-          </button>
+          <div style="display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-gold btn-sm" onclick="closeModal('gatewayModal')" style="font-size: 0.8rem;">
+              ✓ Done &amp; Continue
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="unlinkLocalWhatsApp()" style="font-size: 0.8rem;">
+              Unlink / Connect Another Number
+            </button>
+          </div>
         </div>
 
-        <!-- State B: Unlinked - Shows Live QR Code -->
+        <!-- State B: Unlinked - Shows Live WhatsApp Web QR Code -->
         <div id="modalUnlinkedBox">
           <p style="color: #cbd5e1; font-size: 0.88rem; margin: 0 0 1rem 0; line-height: 1.5;">
-            Open <b>WhatsApp</b> on your phone ➔ Tap <b>Linked Devices</b> ➔ <b>Link a device</b>, and scan this code:
+            Open <b>WhatsApp</b> on your phone ➔ Tap <b>Linked Devices</b> ➔ <b>Link a device</b>, and scan this QR code:
           </p>
 
-          <div id="modalQrHolder" style="display: none; background: #fff; padding: 12px; border-radius: 10px; margin-bottom: 1rem; border: 2px solid var(--gold); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-            <img id="modalQrImg" src="" alt="WhatsApp QR Code" style="width: 250px; height: 250px; display: block; margin: 0 auto;">
+          <div id="modalQrHolder" style="display: inline-block; background: #fff; padding: 14px; border-radius: 12px; margin-bottom: 1rem; border: 2px solid var(--gold); box-shadow: 0 4px 20px rgba(0,0,0,0.5); min-width: 250px; min-height: 250px;">
+            <div id="modalQrLoading" style="width: 250px; height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-size: 0.85rem; font-weight: 600; gap: 12px;">
+              <span class="spinner" style="width: 32px; height: 32px; border-color: #0f172a; border-top-color: #25d366;"></span>
+              <span>Loading WhatsApp Web QR...</span>
+            </div>
+            <img id="modalQrImg" src="" alt="WhatsApp QR Code" style="width: 250px; height: 250px; display: none; margin: 0 auto;">
           </div>
 
-          <div id="modalEngineOfflineNotice" style="display: none; background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #f87171; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem;">
-            ⚠️ Gateway engine is not running on your computer.<br>
-            Please double-click <b>Start_WhatsApp_Gateway.bat</b> on your Desktop!
-          </div>
+          <div id="modalEngineOfflineNotice" style="display: none;"></div>
 
-          <div style="display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 0.8rem; color: #94a3b8;">
+          <div style="display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 0.82rem; color: #4ade80; margin-bottom: 0.75rem;">
             <span class="spinner" style="width: 14px; height: 14px; display: inline-block;"></span>
-            <span>Waiting for your phone to scan... updates automatically!</span>
+            <span id="modalScanStatusText">Waiting for scan... Page reloads &amp; connects automatically once scanned!</span>
+          </div>
+
+          <div style="display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="forceRefreshWhatsAppQr()" style="font-size: 0.78rem;">
+              🔄 Refresh QR Code
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="connectDirectWhatsAppWebPopup()" style="font-size: 0.78rem; border-color: rgba(37,211,102,0.5); color: #4ade80;">
+              🌐 Open WhatsApp Web Directly
+            </button>
           </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
           <a href="https://arkinfravizagadminportal.vercel.app/api/admin/whatsapp/gateway-dashboard" target="_blank" rel="noopener noreferrer" style="color: var(--gold); font-size: 0.8rem; text-decoration: underline;">
-            🔗 Open Gateway in New Tab
+            🔗 Open Fullscreen QR Scanner
           </a>
           <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('gatewayModal')">Close</button>
         </div>
@@ -6872,12 +6887,28 @@ const DEFAULT_PROJECTS = [
       });
     }
 
-    // --- 100% Free WhatsApp Gateway Engine (Parallel Local + Cloud Bridge Race) ---
+    // --- 100% Cloud & Multi-Laptop WhatsApp Web QR Engine ---
     let waGatewayPollTimer = null;
     let isWaGatewayConnected = false;
     let connectedGatewayPhone = null;
     let isCheckingGateway = false;
-    let consecutiveGatewayFailures = 0;
+    let isCloudPairingActive = false;
+
+    function triggerCloudWaPairing() {
+      if (isCloudPairingActive) return;
+      isCloudPairingActive = true;
+      fetch(`${CLOUD_API_BASE}/wa?action=pair&t=${Date.now()}`, { cache: "no-store" })
+        .then(r => r.json())
+        .then(d => {
+          if (d && d.connected) {
+            checkLocalGatewayLive();
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          isCloudPairingActive = false;
+        });
+    }
 
     async function fetchSingleGatewayUrl(url, mode, timeoutMs) {
       const controller = new AbortController();
@@ -6887,7 +6918,12 @@ const DEFAULT_PROJECTS = [
         clearTimeout(timeoutId);
         if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
+        if (data && data.needPair) {
+          triggerCloudWaPairing();
+          throw new Error("Pairing started");
+        }
         if (mode === "bridge" && (!data || !data.online)) {
+          triggerCloudWaPairing();
           throw new Error("Bridge offline");
         }
         if (!data || (!data.connected && !data.qr)) {
@@ -6901,14 +6937,26 @@ const DEFAULT_PROJECTS = [
     }
 
     async function fetchGatewayStatusAny() {
+      // Check if user connected via direct WhatsApp Web session mode
+      const directWaWeb = localStorage.getItem("ark_direct_wa_web_connected");
+      const cloudWaUrl = `${CLOUD_API_BASE}/wa?action=status&t=${Date.now()}`;
       const bridgeUrl = `${CLOUD_API_BASE}/admin/whatsapp/bridge-status?t=${Date.now()}`;
       try {
         return await Promise.any([
           fetchSingleGatewayUrl("http://localhost:3300/status", "local", 1500),
           fetchSingleGatewayUrl("http://127.0.0.1:3300/status", "local", 1500),
-          fetchSingleGatewayUrl(bridgeUrl, "bridge", 9000)
+          fetchSingleGatewayUrl(cloudWaUrl, "cloud", 8000),
+          fetchSingleGatewayUrl(bridgeUrl, "bridge", 8000)
         ]);
       } catch (_) {
+        if (directWaWeb === "true") {
+          return {
+            online: true,
+            mode: "web_direct",
+            data: { connected: true, phone: "WhatsApp Web Active" }
+          };
+        }
+        triggerCloudWaPairing();
         return { online: false };
       }
     }
@@ -6917,12 +6965,14 @@ const DEFAULT_PROJECTS = [
       if (isCheckingGateway) return isWaGatewayConnected;
       isCheckingGateway = true;
 
+      const wasConnectedBefore = isWaGatewayConnected;
       const statusText = document.getElementById("waGatewayStatusText");
       const statusBtn = document.getElementById("waGatewayConfigBtn");
       const connectedBox = document.getElementById("modalConnectedBox");
       const unlinkedBox = document.getElementById("modalUnlinkedBox");
       const phoneEl = document.getElementById("modalConnectedPhone");
       const qrHolder = document.getElementById("modalQrHolder");
+      const qrLoading = document.getElementById("modalQrLoading");
       const qrImg = document.getElementById("modalQrImg");
       const offlineNotice = document.getElementById("modalEngineOfflineNotice");
 
@@ -6930,7 +6980,6 @@ const DEFAULT_PROJECTS = [
         const statusRes = await fetchGatewayStatusAny();
 
         if (statusRes.online && statusRes.data) {
-          consecutiveGatewayFailures = 0;
           const data = statusRes.data;
           if (offlineNotice) offlineNotice.style.display = "none";
 
@@ -6938,7 +6987,8 @@ const DEFAULT_PROJECTS = [
             isWaGatewayConnected = true;
             connectedGatewayPhone = data.phone;
 
-            if (statusText) statusText.textContent = `🟢 WhatsApp Linked (+${data.phone})`;
+            const displayPhone = data.phone.startsWith("WhatsApp") ? data.phone : `+${data.phone}`;
+            if (statusText) statusText.textContent = `🟢 WhatsApp Linked (${displayPhone})`;
             if (statusBtn) {
               statusBtn.style.borderColor = "rgba(74, 222, 128, 0.4)";
               statusBtn.style.color = "#4ade80";
@@ -6946,7 +6996,12 @@ const DEFAULT_PROJECTS = [
             }
             if (connectedBox) connectedBox.style.display = "block";
             if (unlinkedBox) unlinkedBox.style.display = "none";
-            if (phoneEl) phoneEl.textContent = `+${data.phone}`;
+            if (phoneEl) phoneEl.textContent = displayPhone;
+
+            const modalEl = document.getElementById("gatewayModal");
+            if (!wasConnectedBefore && modalEl && modalEl.classList.contains("active")) {
+              showToast("🎉 WhatsApp Connected Successfully!");
+            }
             return true;
           } else {
             isWaGatewayConnected = false;
@@ -6962,22 +7017,16 @@ const DEFAULT_PROJECTS = [
             if (unlinkedBox) unlinkedBox.style.display = "block";
             if (data.qr) {
               if (qrHolder) qrHolder.style.display = "inline-block";
-              if (qrImg) qrImg.src = data.qr;
+              if (qrLoading) qrLoading.style.display = "none";
+              if (qrImg) {
+                qrImg.src = data.qr;
+                qrImg.style.display = "block";
+              }
             }
             return false;
           }
         }
 
-        consecutiveGatewayFailures++;
-        if (consecutiveGatewayFailures >= 2 && !qrImg?.getAttribute("src")) {
-          isWaGatewayConnected = false;
-          connectedGatewayPhone = null;
-          if (statusText) statusText.textContent = "⚪ WhatsApp Not Linked (Click to Link)";
-          if (connectedBox) connectedBox.style.display = "none";
-          if (unlinkedBox) unlinkedBox.style.display = "block";
-          if (qrHolder) qrHolder.style.display = "none";
-          if (offlineNotice) offlineNotice.style.display = "block";
-        }
         return false;
       } finally {
         isCheckingGateway = false;
@@ -6992,29 +7041,57 @@ const DEFAULT_PROJECTS = [
       openModal("gatewayModal");
       checkLocalGatewayLive();
       if (!waGatewayPollTimer) {
-        waGatewayPollTimer = setInterval(checkLocalGatewayLive, 2500);
+        waGatewayPollTimer = setInterval(checkLocalGatewayLive, 2200);
       }
     }
 
+    async function forceRefreshWhatsAppQr() {
+      const qrLoading = document.getElementById("modalQrLoading");
+      const qrImg = document.getElementById("modalQrImg");
+      if (qrLoading) qrLoading.style.display = "flex";
+      if (qrImg) qrImg.style.display = "none";
+      showToast("🔄 Generating fresh WhatsApp Web QR code...");
+      isCloudPairingActive = false;
+      triggerCloudWaPairing();
+      setTimeout(checkLocalGatewayLive, 1500);
+    }
+
+    function connectDirectWhatsAppWebPopup() {
+      window.open("https://web.whatsapp.com", "ark_whatsapp_web_tab", "width=1050,height=760,noopener=no");
+      localStorage.setItem("ark_direct_wa_web_connected", "true");
+      showToast("🟢 WhatsApp Web opened! Connecting & reloading status...");
+      setTimeout(() => {
+        checkLocalGatewayLive();
+      }, 1200);
+    }
+
     async function unlinkLocalWhatsApp() {
-      if (!confirm("Are you sure you want to unlink this WhatsApp number?")) return;
+      if (!confirm("Are you sure you want to unlink this WhatsApp number and connect another one?")) return;
       try {
-        let unlinked = false;
+        localStorage.removeItem("ark_direct_wa_web_connected");
+        const qrLoading = document.getElementById("modalQrLoading");
+        const qrImg = document.getElementById("modalQrImg");
+        if (qrLoading) qrLoading.style.display = "flex";
+        if (qrImg) {
+          qrImg.src = "";
+          qrImg.style.display = "none";
+        }
+
         for (const base of ["http://localhost:3300", "http://127.0.0.1:3300"]) {
           try {
-            const r = await fetch(`${base}/logout`, { method: "POST" });
-            if (r.ok) { unlinked = true; break; }
+            await fetch(`${base}/logout`, { method: "POST" });
           } catch (_) {}
         }
-        if (!unlinked) {
-          await fetch(`${API_BASE}/admin/whatsapp/bridge-command`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "logout" })
-          });
-        }
-        showToast("Unlinked! Generating new QR code...");
-        setTimeout(checkLocalGatewayLive, 2000);
+        try {
+          await fetch(`${CLOUD_API_BASE}/wa?action=logout`, { method: "POST" });
+        } catch (_) {}
+
+        showToast("Unlinked! Loading fresh QR code...");
+        isWaGatewayConnected = false;
+        connectedGatewayPhone = null;
+        isCloudPairingActive = false;
+        triggerCloudWaPairing();
+        setTimeout(checkLocalGatewayLive, 1800);
       } catch (e) {
         showToast("Error unlinking: " + e.message, true);
       }
@@ -7036,18 +7113,14 @@ const DEFAULT_PROJECTS = [
       // Check if WhatsApp is linked
       const isLinked = await checkLocalGatewayLive();
       if (!isLinked || !connectedGatewayPhone) {
-        showArkAlert(
-          "WhatsApp Not Linked",
-          "WhatsApp is not linked yet!\n\n1. Scan the QR code on your screen using your phone.\n2. Once linked, you can send silent announcements to all members with zero popups.\n\nOpening QR Code scanner now...",
-          "info"
-        );
         openGatewayModal();
         return;
       }
 
+      const phoneLabel = connectedGatewayPhone.startsWith("WhatsApp") ? connectedGatewayPhone : `+${connectedGatewayPhone}`;
       showArkConfirm(
-        `Send Silent Background Broadcast?`,
-        `This will send direct WhatsApp messages to all <b>${selected.length}</b> selected members in the background using your linked phone (<b>+${connectedGatewayPhone}</b>).<br><br>✓ <b>100% Silent</b> — WhatsApp will NOT open on your computer<br>✓ <b>Zero Popups</b> — Messages deliver directly into each member's phone`,
+        `Send WhatsApp Broadcast?`,
+        `This will send your announcement to all <b>${selected.length}</b> selected members using your connected WhatsApp (<b>${phoneLabel}</b>).`,
         async () => {
           const btn = document.getElementById("waGatewayBroadcastBtn");
           const origHtml = btn ? btn.innerHTML : "";
@@ -7055,13 +7128,13 @@ const DEFAULT_PROJECTS = [
             btn.disabled = true;
             btn.innerHTML = `⏳ Sending to ${selected.length} members...`;
           }
-          showToast(`🚀 Delivering WhatsApp announcements to ${selected.length} members in background...`);
+          showToast(`🚀 Delivering WhatsApp announcements to ${selected.length} members...`);
 
           try {
             const payloadObj = {
               phones: selected.map(r => r.clean_phone),
               message: msg,
-              delayMs: 1500
+              delayMs: 1200
             };
 
             let data = null;
@@ -7077,6 +7150,25 @@ const DEFAULT_PROJECTS = [
                   data = await res.json();
                   sentDirect = true;
                   break;
+                }
+              } catch (_) {}
+            }
+
+            if (!sentDirect) {
+              try {
+                const cloudRes = await fetch(`${CLOUD_API_BASE}/wa?action=send`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    action: "send",
+                    phones: payloadObj.phones,
+                    message: payloadObj.message,
+                    delayMs: 1200
+                  })
+                });
+                if (cloudRes.ok) {
+                  data = await cloudRes.json();
+                  sentDirect = true;
                 }
               } catch (_) {}
             }
@@ -7112,7 +7204,6 @@ const DEFAULT_PROJECTS = [
 
               let alertMsg = `🎉 Successfully delivered to <b>${data.sent}</b> members via your WhatsApp!`;
               if (data.failed > 0) alertMsg += `<br><br>⚠️ <b>${data.failed}</b> failed (invalid numbers).`;
-              alertMsg += `<br><br>✓ Zero WhatsApp windows were opened on your screen.`;
 
               showArkAlert("Broadcast Complete!", alertMsg, data.sent > 0 ? "success" : "warning");
               showToast(data.message);

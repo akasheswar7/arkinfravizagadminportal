@@ -17,8 +17,14 @@
   "bugs": {
     "url": "https://github.com/akasheswar7/arkinfravizag/issues"
   },
-  "homepage": "https://github.com/akasheswar7/arkinfravizag#readme",
+  "homepage": {
+    "url": "https://github.com/akasheswar7/arkinfravizag#readme"
+  },
   "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "mongodb": "^6.12.0",
+    "pino": "^10.4.0",
+    "qrcode": "^1.5.4",
     "sharp": "^0.35.3"
   }
 }
