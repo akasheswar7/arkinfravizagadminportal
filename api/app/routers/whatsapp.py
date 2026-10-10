@@ -503,3 +503,86 @@ async def send_gateway_broadcast(
         "message": f"Background broadcast finished: Delivered to {sent_count} contacts! ({failed_count} failed)"
     }
 
+
+import time
+
+class BridgeHeartbeatPayload(BaseModel):
+    connected: bool = False
+    phone: Optional[str] = None
+    qr: Optional[str] = None
+    activeJob: Optional[dict] = None
+    lastResult: Optional[dict] = None
+
+class BridgeCommandPayload(BaseModel):
+    action: str  # "logout" or "bulk-send"
+    phones: Optional[List[str]] = None
+    message: Optional[str] = None
+    delayMs: Optional[int] = 1500
+
+@router.post("/bridge-heartbeat")
+async def bridge_heartbeat(payload: BridgeHeartbeatPayload):
+    """Receives live status & QR code from the local PC WhatsApp Gateway and returns any queued command."""
+    settings_col = get_collection("system_settings")
+    doc = await settings_col.find_one({"key": "local_wa_bridge"})
+    pending_cmd = doc.get("pending_command") if doc else None
+
+    update_fields = {
+        "key": "local_wa_bridge",
+        "connected": payload.connected,
+        "phone": payload.phone,
+        "qr": payload.qr,
+        "activeJob": payload.activeJob,
+        "updated_at": time.time(),
+        "pending_command": None
+    }
+    if payload.lastResult is not None:
+        update_fields["last_result"] = payload.lastResult
+
+    await settings_col.update_one(
+        {"key": "local_wa_bridge"},
+        {"$set": update_fields},
+        upsert=True
+    )
+    return {"success": True, "command": pending_cmd}
+
+@router.get("/bridge-status")
+async def bridge_status():
+    """Returns live status & QR code of the local PC WhatsApp Gateway via cloud relay."""
+    settings_col = get_collection("system_settings")
+    doc = await settings_col.find_one({"key": "local_wa_bridge"})
+    if not doc:
+        return {"success": False, "online": False}
+
+    age = time.time() - float(doc.get("updated_at") or 0)
+    if age > 20:
+        return {"success": False, "online": False, "age": age}
+
+    return {
+        "success": True,
+        "online": True,
+        "connected": bool(doc.get("connected")),
+        "phone": doc.get("phone"),
+        "qr": doc.get("qr"),
+        "activeJob": doc.get("activeJob"),
+        "lastResult": doc.get("last_result")
+    }
+
+@router.post("/bridge-command")
+async def bridge_command(payload: BridgeCommandPayload):
+    """Queues a command (bulk-send or logout) for the local PC WhatsApp Gateway."""
+    settings_col = get_collection("system_settings")
+    cmd = {
+        "id": str(int(time.time() * 1000)),
+        "action": payload.action,
+        "phones": payload.phones or [],
+        "message": payload.message or "",
+        "delayMs": payload.delayMs or 1500
+    }
+    await settings_col.update_one(
+        {"key": "local_wa_bridge"},
+        {"$set": {"pending_command": cmd, "last_result": None}},
+        upsert=True
+    )
+    return {"success": True, "command_id": cmd["id"], "message": f"Queued {payload.action} for WhatsApp Gateway."}
+
+

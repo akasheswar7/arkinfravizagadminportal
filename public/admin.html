@@ -606,6 +606,11 @@
                 <select id="customerAgentFilter" class="form-select" style="max-width: 180px;" onchange="loadCustomers()">
                   <option value="All">All Agents</option>
                 </select>
+                <select id="customerVehicleFilter" class="form-select" style="max-width: 170px;" onchange="loadCustomers()">
+                  <option value="All">All Vehicles</option>
+                  <option value="Own Vehicle">🚗 Own Vehicle</option>
+                  <option value="Office Vehicle">🚐 Office Vehicle</option>
+                </select>
               </div>
               <button class="btn btn-gold btn-sm" onclick="openAddCustomerModal()">+ Add Customer Lead</button>
             </div>
@@ -1076,17 +1081,29 @@
           <textarea id="customerAddress" class="form-textarea" rows="2" placeholder="Full street address, city, district, pin code..."></textarea>
         </div>
 
-        <!-- Supported By (Optional) Field -->
-        <div class="form-group">
-          <label class="form-label">Supported By (Optional) <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">— If customer came by own / walk-in without director or agent</span></label>
-          <input type="text" id="customerSupportedBy" class="form-input" list="supportedBySuggestions" placeholder="e.g. Direct / Walk-in (Company Own) or Staff Name">
-          <datalist id="supportedBySuggestions">
-            <option value="Direct / Walk-in (Company Own)">
-            <option value="Company Direct (No Agent)">
-            <option value="Self / Came on Own">
-            <option value="Online / Website Inquiry">
-            <option value="Office Walk-in">
-          </datalist>
+        <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 1rem;">
+          <!-- Supported By (Optional) Field -->
+          <div class="form-group">
+            <label class="form-label">Supported By (Optional) <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal;">— Walk-in / Company Own</span></label>
+            <input type="text" id="customerSupportedBy" class="form-input" list="supportedBySuggestions" placeholder="e.g. Direct / Walk-in (Company Own) or Staff">
+            <datalist id="supportedBySuggestions">
+              <option value="Direct / Walk-in (Company Own)">
+              <option value="Company Direct (No Agent)">
+              <option value="Self / Came on Own">
+              <option value="Online / Website Inquiry">
+              <option value="Office Walk-in">
+            </datalist>
+          </div>
+
+          <!-- Site Visit Vehicle Mode Field -->
+          <div class="form-group">
+            <label class="form-label">Site Visit Vehicle Mode <span style="font-size: 0.72rem; color: var(--gold); font-weight: normal;">(Own / Office)</span></label>
+            <select id="customerVehicleMode" class="form-select">
+              <option value="">Select Vehicle Mode...</option>
+              <option value="Own Vehicle">🚗 Own Vehicle (Customer's Own)</option>
+              <option value="Office Vehicle">🚐 Office Vehicle (ARK Infra Cab / Vehicle)</option>
+            </select>
+          </div>
         </div>
 
         <!-- Director & Agent Referral Chain -->
@@ -1881,7 +1898,7 @@
             Open <b>WhatsApp</b> on your phone ➔ Tap <b>Linked Devices</b> ➔ <b>Link a device</b>, and scan this code:
           </p>
 
-          <div id="modalQrHolder" style="background: #fff; padding: 12px; border-radius: 10px; display: inline-block; margin-bottom: 1rem; border: 2px solid var(--gold); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+          <div id="modalQrHolder" style="display: none; background: #fff; padding: 12px; border-radius: 10px; margin-bottom: 1rem; border: 2px solid var(--gold); box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
             <img id="modalQrImg" src="" alt="WhatsApp QR Code" style="width: 250px; height: 250px; display: block; margin: 0 auto;">
           </div>
 
@@ -5049,11 +5066,13 @@ const DEFAULT_PROJECTS = [
     async function loadCustomers() {
       await syncAllCustomerMetadata();
       const status = document.getElementById("customerStatusFilter")?.value || "All";
+      const vehicle = document.getElementById("customerVehicleFilter")?.value || "All";
       const directorId = document.getElementById("customerDirectorFilter")?.value || "All";
       const agentId = document.getElementById("customerAgentFilter")?.value || "All";
       const search = document.getElementById("customerSearchInput")?.value || "";
 
       let url = `/admin/customers?status=${encodeURIComponent(status)}&`;
+      if (vehicle !== "All") url += `vehicle_mode=${encodeURIComponent(vehicle)}&`;
       if (directorId !== "All") url += `director_id=${encodeURIComponent(directorId)}&`;
       if (agentId !== "All") url += `agent_id=${encodeURIComponent(agentId)}&`;
       if (search) url += `search=${encodeURIComponent(search)}&`;
@@ -5084,6 +5103,15 @@ const DEFAULT_PROJECTS = [
             } else if (c.site_visit_status === "Fail" || c.site_visit_status === "Negative") {
               statusColor = "#f87171"; // soft red
               statusIcon = "❌";
+            }
+
+            let vehicleHtml = "";
+            if (c.vehicle_mode === "Own Vehicle") {
+              vehicleHtml = `<div style="font-size:0.75rem; color:#38bdf8; margin:2px 0; font-weight:600;">🚗 Own Vehicle</div>`;
+            } else if (c.vehicle_mode === "Office Vehicle") {
+              vehicleHtml = `<div style="font-size:0.75rem; color:#c084fc; margin:2px 0; font-weight:600;">🚐 Office Vehicle</div>`;
+            } else if (c.vehicle_mode) {
+              vehicleHtml = `<div style="font-size:0.75rem; color:#94a3b8; margin:2px 0;">🚘 ${c.vehicle_mode}</div>`;
             }
 
             const photoUrl = normalizeImageUrl(c.photo_or_id || "images/logo.webp");
@@ -5138,6 +5166,7 @@ const DEFAULT_PROJECTS = [
                 <div style="font-size:0.85rem; font-weight:600; color:${statusColor}; margin-bottom:2px;">
                   ${statusIcon} ${c.site_visit_status}
                 </div>
+                ${vehicleHtml}
                 <span style="color:var(--text-muted); font-size:0.72rem;">📅 ${c.submission_date || '-'}</span>
               </td>
               <td>
@@ -5174,6 +5203,8 @@ const DEFAULT_PROJECTS = [
       document.getElementById("customerReceiptPreview").style.display = "none";
       const suppEl = document.getElementById("customerSupportedBy");
       if (suppEl) suppEl.value = "";
+      const vehEl = document.getElementById("customerVehicleMode");
+      if (vehEl) vehEl.value = "";
       await syncAllCustomerMetadata(true);
       document.getElementById("customerModalTitle").textContent = "Add Customer Lead";
       await onModalDirectorChange(true);
@@ -5196,6 +5227,8 @@ const DEFAULT_PROJECTS = [
       document.getElementById("customerAddress").value = c.address || "";
       const suppElEdit = document.getElementById("customerSupportedBy");
       if (suppElEdit) suppElEdit.value = c.supported_by || "";
+      const vehElEdit = document.getElementById("customerVehicleMode");
+      if (vehElEdit) vehElEdit.value = c.vehicle_mode || "";
 
       document.getElementById("customerDirectorSelect").value = c.director_id || "";
       await onModalDirectorChange(false);
@@ -5246,6 +5279,7 @@ const DEFAULT_PROJECTS = [
         address: (document.getElementById("customerAddress").value || "").trim(),
         photo_or_id: (document.getElementById("customerPhotoUrl").value || "").trim(),
         supported_by: (document.getElementById("customerSupportedBy") ? document.getElementById("customerSupportedBy").value.trim() : "") || null,
+        vehicle_mode: (document.getElementById("customerVehicleMode") ? document.getElementById("customerVehicleMode").value : "") || null,
         director_id: dirSelect.value || null,
         director_name: dirSelect.value ? dirName : null,
         agent_id: agentSelect.value || null,
@@ -6838,10 +6872,42 @@ const DEFAULT_PROJECTS = [
       });
     }
 
-    // --- 100% Free WhatsApp Gateway Engine ---
+    // --- 100% Free WhatsApp Gateway Engine (Direct Local + Cloud Bridge Failover) ---
     let waGatewayPollTimer = null;
     let isWaGatewayConnected = false;
     let connectedGatewayPhone = null;
+
+    async function fetchGatewayStatusAny() {
+      const localUrls = ["http://localhost:3300/status", "http://127.0.0.1:3300/status"];
+      for (const url of localUrls) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1800);
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const data = await res.json();
+            return { online: true, mode: "local", baseUrl: url.replace("/status", ""), data };
+          }
+        } catch (_) {}
+      }
+
+      // Fallback to Cloud Bridge (works even when HTTPS browser blocks HTTP localhost)
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(`${API_BASE}/admin/whatsapp/bridge-status`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.online) {
+            return { online: true, mode: "bridge", baseUrl: `${API_BASE}/admin/whatsapp`, data };
+          }
+        }
+      } catch (_) {}
+
+      return { online: false };
+    }
 
     async function checkLocalGatewayLive() {
       const statusText = document.getElementById("waGatewayStatusText");
@@ -6849,63 +6915,63 @@ const DEFAULT_PROJECTS = [
       const connectedBox = document.getElementById("modalConnectedBox");
       const unlinkedBox = document.getElementById("modalUnlinkedBox");
       const phoneEl = document.getElementById("modalConnectedPhone");
+      const qrHolder = document.getElementById("modalQrHolder");
       const qrImg = document.getElementById("modalQrImg");
       const offlineNotice = document.getElementById("modalEngineOfflineNotice");
 
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch("http://localhost:3300/status", { signal: controller.signal });
-        clearTimeout(timeoutId);
+      const statusRes = await fetchGatewayStatusAny();
 
-        if (res.ok) {
-          const data = await res.json();
-          if (offlineNotice) offlineNotice.style.display = "none";
+      if (statusRes.online && statusRes.data) {
+        const data = statusRes.data;
+        if (offlineNotice) offlineNotice.style.display = "none";
 
-          if (data.connected && data.phone) {
-            isWaGatewayConnected = true;
-            connectedGatewayPhone = data.phone;
+        if (data.connected && data.phone) {
+          isWaGatewayConnected = true;
+          connectedGatewayPhone = data.phone;
 
-            if (statusText) statusText.textContent = `🟢 WhatsApp Linked (+${data.phone})`;
-            if (statusBtn) {
-              statusBtn.style.borderColor = "rgba(74, 222, 128, 0.4)";
-              statusBtn.style.color = "#4ade80";
-              statusBtn.style.background = "rgba(74, 222, 128, 0.08)";
-            }
-            if (connectedBox) connectedBox.style.display = "block";
-            if (unlinkedBox) unlinkedBox.style.display = "none";
-            if (phoneEl) phoneEl.textContent = `+${data.phone}`;
-            return true;
-          } else if (data.qr) {
-            isWaGatewayConnected = false;
-            connectedGatewayPhone = null;
-
-            if (statusText) statusText.textContent = "⚪ WhatsApp Not Linked (Click to Link)";
-            if (statusBtn) {
-              statusBtn.style.borderColor = "rgba(234, 179, 8, 0.4)";
-              statusBtn.style.color = "#facc15";
-              statusBtn.style.background = "transparent";
-            }
-            if (connectedBox) connectedBox.style.display = "none";
-            if (unlinkedBox) unlinkedBox.style.display = "block";
-            if (qrImg) qrImg.src = data.qr;
-            return false;
+          if (statusText) statusText.textContent = `🟢 WhatsApp Linked (+${data.phone})`;
+          if (statusBtn) {
+            statusBtn.style.borderColor = "rgba(74, 222, 128, 0.4)";
+            statusBtn.style.color = "#4ade80";
+            statusBtn.style.background = "rgba(74, 222, 128, 0.08)";
           }
-        }
-      } catch (_) {
-        isWaGatewayConnected = false;
-        connectedGatewayPhone = null;
+          if (connectedBox) connectedBox.style.display = "block";
+          if (unlinkedBox) unlinkedBox.style.display = "none";
+          if (phoneEl) phoneEl.textContent = `+${data.phone}`;
+          return true;
+        } else {
+          isWaGatewayConnected = false;
+          connectedGatewayPhone = null;
 
-        if (statusText) statusText.textContent = "⚪ WhatsApp Not Linked (Click to Link)";
-        if (statusBtn) {
-          statusBtn.style.borderColor = "rgba(234, 179, 8, 0.4)";
-          statusBtn.style.color = "#facc15";
-          statusBtn.style.background = "transparent";
+          if (statusText) statusText.textContent = "⚪ WhatsApp Not Linked (Click to Link)";
+          if (statusBtn) {
+            statusBtn.style.borderColor = "rgba(234, 179, 8, 0.4)";
+            statusBtn.style.color = "#facc15";
+            statusBtn.style.background = "transparent";
+          }
+          if (connectedBox) connectedBox.style.display = "none";
+          if (unlinkedBox) unlinkedBox.style.display = "block";
+          if (data.qr) {
+            if (qrHolder) qrHolder.style.display = "inline-block";
+            if (qrImg) qrImg.src = data.qr;
+          }
+          return false;
         }
-        if (connectedBox) connectedBox.style.display = "none";
-        if (unlinkedBox) unlinkedBox.style.display = "block";
-        if (offlineNotice) offlineNotice.style.display = "block";
       }
+
+      isWaGatewayConnected = false;
+      connectedGatewayPhone = null;
+
+      if (statusText) statusText.textContent = "⚪ WhatsApp Not Linked (Click to Link)";
+      if (statusBtn) {
+        statusBtn.style.borderColor = "rgba(234, 179, 8, 0.4)";
+        statusBtn.style.color = "#facc15";
+        statusBtn.style.background = "transparent";
+      }
+      if (connectedBox) connectedBox.style.display = "none";
+      if (unlinkedBox) unlinkedBox.style.display = "block";
+      if (qrHolder) qrHolder.style.display = "none";
+      if (offlineNotice) offlineNotice.style.display = "block";
       return false;
     }
 
@@ -6924,9 +6990,22 @@ const DEFAULT_PROJECTS = [
     async function unlinkLocalWhatsApp() {
       if (!confirm("Are you sure you want to unlink this WhatsApp number?")) return;
       try {
-        await fetch("http://localhost:3300/logout", { method: "POST" });
+        let unlinked = false;
+        for (const base of ["http://localhost:3300", "http://127.0.0.1:3300"]) {
+          try {
+            const r = await fetch(`${base}/logout`, { method: "POST" });
+            if (r.ok) { unlinked = true; break; }
+          } catch (_) {}
+        }
+        if (!unlinked) {
+          await fetch(`${API_BASE}/admin/whatsapp/bridge-command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "logout" })
+          });
+        }
         showToast("Unlinked! Generating new QR code...");
-        setTimeout(checkLocalGatewayLive, 1000);
+        setTimeout(checkLocalGatewayLive, 2000);
       } catch (e) {
         showToast("Error unlinking: " + e.message, true);
       }
@@ -6970,18 +7049,51 @@ const DEFAULT_PROJECTS = [
           showToast(`🚀 Delivering WhatsApp announcements to ${selected.length} members in background...`);
 
           try {
-            const res = await fetch("http://localhost:3300/bulk-send", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                phones: selected.map(r => r.clean_phone),
-                message: msg,
-                delayMs: 1500
-              })
-            });
-            const data = await res.json();
+            const payloadObj = {
+              phones: selected.map(r => r.clean_phone),
+              message: msg,
+              delayMs: 1500
+            };
 
-            if (res.ok && data.success) {
+            let data = null;
+            let sentDirect = false;
+            for (const base of ["http://localhost:3300", "http://127.0.0.1:3300"]) {
+              try {
+                const res = await fetch(`${base}/bulk-send`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payloadObj)
+                });
+                if (res.ok) {
+                  data = await res.json();
+                  sentDirect = true;
+                  break;
+                }
+              } catch (_) {}
+            }
+
+            if (!sentDirect) {
+              const bridgeRes = await fetch(`${API_BASE}/admin/whatsapp/bridge-command`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "bulk-send",
+                  phones: payloadObj.phones,
+                  message: payloadObj.message,
+                  delayMs: 1500
+                })
+              });
+              if (bridgeRes.ok) {
+                data = {
+                  success: true,
+                  sent: selected.length,
+                  failed: 0,
+                  message: `Dispatched to ${selected.length} contacts in background!`
+                };
+              }
+            }
+
+            if (data && data.success) {
               selected.forEach(r => {
                 r.sent = true;
                 const idx = waPreparedRecipients.findIndex(m => m.phone === r.phone && m.agent_name === r.agent_name);
@@ -6996,7 +7108,7 @@ const DEFAULT_PROJECTS = [
               showArkAlert("Broadcast Complete!", alertMsg, data.sent > 0 ? "success" : "warning");
               showToast(data.message);
             } else {
-              showArkAlert("Broadcast Failed", data.error || "Failed to dispatch via WhatsApp Gateway.", "danger");
+              showArkAlert("Broadcast Failed", (data && data.error) || "Failed to dispatch via WhatsApp Gateway.", "danger");
               showToast("Dispatch failed", true);
             }
           } catch (e) {
