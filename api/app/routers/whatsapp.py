@@ -659,19 +659,12 @@ async def gateway_dashboard():
     </div>
   </div>
   <script>
-    let pairing = false;
-    function triggerPair() {
-      if (pairing) return;
-      pairing = true;
-      fetch('/api/wa?action=pair&t=' + Date.now()).catch(() => {}).finally(() => { pairing = false; });
-    }
     async function checkStatus() {
       let data = null;
       try {
-        const r = await fetch('/api/wa?action=status&t=' + Date.now());
+        const r = await fetch('/api/admin/whatsapp/bridge-status?t=' + Date.now());
         if (r.ok) {
           const d = await r.json();
-          if (d && d.needPair) triggerPair();
           if (d && (d.connected || d.qr)) data = d;
         }
       } catch (_) {}
@@ -692,7 +685,6 @@ async def gateway_dashboard():
         document.getElementById('qrArea').style.display = 'block';
         document.getElementById('qrImg').src = data.qr;
       } else {
-        triggerPair();
         document.getElementById('statusArea').style.display = 'block';
         document.getElementById('statusArea').innerHTML = '<div class="badge badge-waiting">⏳ Loading WhatsApp Web QR Code...</div>';
         document.getElementById('qrArea').style.display = 'none';
@@ -701,9 +693,12 @@ async def gateway_dashboard():
     }
     async function logout() {
       if (!confirm('Are you sure you want to unlink this WhatsApp number?')) return;
-      await fetch('/api/wa?action=logout', { method: 'POST' });
+      await fetch('/api/admin/whatsapp/bridge-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' })
+      });
       alert('Unlinked! Generating new QR code...');
-      triggerPair();
       setTimeout(checkStatus, 1800);
     }
     setInterval(checkStatus, 2200);

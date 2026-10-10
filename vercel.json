@@ -4,7 +4,6 @@
     { "source": "/", "destination": "/admin.html", "permanent": false }
   ],
   "builds": [
-    { "src": "api/wa.js", "use": "@vercel/node", "config": { "maxDuration": 60 } },
     { "src": "api/index.py", "use": "@vercel/python" },
     { "src": "backend/app/main.py", "use": "@vercel/python" },
     { "src": "*.html", "use": "@vercel/static" },
@@ -13,7 +12,6 @@
     { "src": "data/**", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/api/wa", "dest": "api/wa.js" },
     { "src": "/api/(.*)", "dest": "api/index.py" },
     { "src": "/admin", "dest": "/admin.html" },
     { "src": "/(.*)", "dest": "/$1" }

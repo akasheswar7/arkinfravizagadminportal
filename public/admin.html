@@ -6892,24 +6892,6 @@ const DEFAULT_PROJECTS = [
     let isWaGatewayConnected = false;
     let connectedGatewayPhone = null;
     let isCheckingGateway = false;
-    let isCloudPairingActive = false;
-
-    function triggerCloudWaPairing() {
-      if (isCloudPairingActive) return;
-      isCloudPairingActive = true;
-      fetch(`${CLOUD_API_BASE}/wa?action=pair&t=${Date.now()}`, { cache: "no-store" })
-        .then(r => r.json())
-        .then(d => {
-          if (d && d.connected) {
-            checkLocalGatewayLive();
-          }
-        })
-        .catch(() => {})
-        .finally(() => {
-          isCloudPairingActive = false;
-        });
-    }
-
     async function fetchSingleGatewayUrl(url, mode, timeoutMs) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -6918,12 +6900,7 @@ const DEFAULT_PROJECTS = [
         clearTimeout(timeoutId);
         if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
-        if (data && data.needPair) {
-          triggerCloudWaPairing();
-          throw new Error("Pairing started");
-        }
         if (mode === "bridge" && (!data || !data.online)) {
-          triggerCloudWaPairing();
           throw new Error("Bridge offline");
         }
         if (!data || (!data.connected && !data.qr)) {
@@ -6937,15 +6914,12 @@ const DEFAULT_PROJECTS = [
     }
 
     async function fetchGatewayStatusAny() {
-      // Check if user connected via direct WhatsApp Web session mode
       const directWaWeb = localStorage.getItem("ark_direct_wa_web_connected");
-      const cloudWaUrl = `${CLOUD_API_BASE}/wa?action=status&t=${Date.now()}`;
       const bridgeUrl = `${CLOUD_API_BASE}/admin/whatsapp/bridge-status?t=${Date.now()}`;
       try {
         return await Promise.any([
           fetchSingleGatewayUrl("http://localhost:3300/status", "local", 1500),
           fetchSingleGatewayUrl("http://127.0.0.1:3300/status", "local", 1500),
-          fetchSingleGatewayUrl(cloudWaUrl, "cloud", 8000),
           fetchSingleGatewayUrl(bridgeUrl, "bridge", 8000)
         ]);
       } catch (_) {
@@ -6956,7 +6930,6 @@ const DEFAULT_PROJECTS = [
             data: { connected: true, phone: "WhatsApp Web Active" }
           };
         }
-        triggerCloudWaPairing();
         return { online: false };
       }
     }
@@ -7050,10 +7023,8 @@ const DEFAULT_PROJECTS = [
       const qrImg = document.getElementById("modalQrImg");
       if (qrLoading) qrLoading.style.display = "flex";
       if (qrImg) qrImg.style.display = "none";
-      showToast("🔄 Generating fresh WhatsApp Web QR code...");
-      isCloudPairingActive = false;
-      triggerCloudWaPairing();
-      setTimeout(checkLocalGatewayLive, 1500);
+      showToast("🔄 Refreshing WhatsApp Web QR code...");
+      setTimeout(checkLocalGatewayLive, 800);
     }
 
     function connectDirectWhatsAppWebPopup() {
@@ -7083,14 +7054,16 @@ const DEFAULT_PROJECTS = [
           } catch (_) {}
         }
         try {
-          await fetch(`${CLOUD_API_BASE}/wa?action=logout`, { method: "POST" });
+          await fetch(`${CLOUD_API_BASE}/admin/whatsapp/bridge-command`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "logout" })
+          });
         } catch (_) {}
 
         showToast("Unlinked! Loading fresh QR code...");
         isWaGatewayConnected = false;
         connectedGatewayPhone = null;
-        isCloudPairingActive = false;
-        triggerCloudWaPairing();
         setTimeout(checkLocalGatewayLive, 1800);
       } catch (e) {
         showToast("Error unlinking: " + e.message, true);
